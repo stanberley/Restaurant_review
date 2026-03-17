@@ -1,38 +1,20 @@
 <?php
-$isAuthenticated = isset($_GET['auth']) && $_GET['auth'] === '1';
-$currentRole = isset($_GET['role']) ? $_GET['role'] : 'diner';
+    include('includes/header.php');
 
-if (!$isAuthenticated) {
+if (!isset($_SESSION['role'])) {
     header('Location: login.php');
     exit;
 }
+
+$currentRole = $_SESSION['role'];
 
 $successMessage = '';
 $errorMessage = '';
 
 $dinerProfile = [
-    'name' => 'Sample Diner',
-    'email' => 'diner@example.com',
-    'password' => 'password123'
-];
-
-$restaurantProfile = [
-    'restaurant_name' => 'Nasi & Co.',
-    'owner_name' => 'Amir Hassan',
-    'email' => 'owner@foodview.com',
-    'address' => '12 Jalan Merdeka, Kuala Lumpur',
-    'phone' => '+60 12-345 6789',
-    'cuisine' => 'Malaysian',
-    'hours' => '10:00 AM - 10:00 PM',
-    'price_range' => '$$',
-    'menu_image' => 'menu-sample.jpg',
-    'front_image' => 'front-sample.jpg'
-];
-
-$adminProfile = [
-    'name' => 'Foodview Admin',
-    'email' => 'admin@foodview.com',
-    'password' => 'admin123'
+    'name' => $_SESSION['name'] ?? ' ',
+    'email' => $_SESSION['email'] ?? ' ',
+    'password' => $_SESSION['password'] ?? ' '
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -110,8 +92,6 @@ if ($currentRole === 'restaurant') {
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <?php include('includes/header.php'); ?>
-
     <main class="py-5">
         <div class="container">
             <div class="row justify-content-center">
@@ -210,6 +190,5 @@ if ($currentRole === 'restaurant') {
     </main>
 
     <?php include('includes/footer.php'); ?>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 <?php
-$isAuthenticated = isset($_GET['auth']) && $_GET['auth'] === '1';
-$currentRole = isset($_GET['role']) ? $_GET['role'] : 'guest';
+$isAuthenticated = isset($_SESSION['role']);
+$currentRole =  $_SESSION['role'] ?? 'guest';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -39,9 +39,6 @@ $currentRole = isset($_GET['role']) ? $_GET['role'] : 'guest';
             </div>
         </div>
     </div>
-
-    <?php include("includes/footer.php"); ?>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const loginForm = document.getElementById('loginForm');
         const loginError = document.getElementById('loginError');
@@ -79,8 +76,16 @@ $currentRole = isset($_GET['role']) ? $_GET['role'] : 'guest';
                 mappedRole = 'restaurant';
             }
 
-            window.location.href = 'dashboard.php?role=' + encodeURIComponent(mappedRole) + '&auth=1';
-        });
+            //TO BE CHANGED ONCE BACKEND IS IMPLEMENTED
+            const name = email.split('@')[0];
+
+            window.location.href =
+            'login-handler.php?role=' + encodeURIComponent(mappedRole) +
+            '&email=' + encodeURIComponent(email) +
+            '&name=' + encodeURIComponent(name);
+            });
     </script>
+    <?php include("includes/footer.php"); ?>
+
 </body>
 </html>

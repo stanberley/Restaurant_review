@@ -1,49 +1,55 @@
 <?php
-$role = isset($_GET['role']) ? $_GET['role'] : 'guest';
-$isAuthenticated = isset($_GET['auth']) && $_GET['auth'] === '1';
+    include("includes/header.php");
 
-$allowedRoles = ['diner', 'restaurant', 'admin'];
-if (!in_array($role, $allowedRoles, true)) {
-    $role = 'diner';
-}
+    if (!isset($_SESSION['role'])) {
+        header("Location: login.php");
+        exit();
+    }
+    $role = isset($_SESSION['role']) ? $_SESSION['role'] : 'guest';
+    $isAuthenticated = isset($_SESSION['role']);
 
-$roleTitle = 'Diner Dashboard';
-$roleDescription = 'Browse restaurants, search listings, and manage your dining activity.';
+    $allowedRoles = ['diner', 'restaurant', 'admin'];
+    if (!in_array($role, $allowedRoles, true)) {
+        $role = 'diner';
+    }
 
-if ($role === 'restaurant') {
-    $roleTitle = 'Restaurant Owner Dashboard';
-    $roleDescription = 'Use the diner dashboard as your base and access extra business management tools.';
-} elseif ($role === 'admin') {
-    $roleTitle = 'Admin Dashboard';
-    $roleDescription = 'Use platform-wide moderation tools while retaining the shared dashboard experience.';
-}
+    $roleTitle = 'Diner Dashboard';
+    $roleDescription = 'Browse restaurants, search listings, and manage your dining activity.';
 
-$exampleRestaurants = [
-    [
-        'name' => 'Nasi & Co.',
-        'cuisine' => 'Malaysian',
-        'rating' => '4.7 / 5',
-        'price' => '$$',
-        'image' => 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=80',
-        'summary' => 'Popular for nasi lemak, grilled chicken, and quick lunch sets.'
-    ],
-    [
-        'name' => 'Pasta House',
-        'cuisine' => 'Italian',
-        'rating' => '4.5 / 5',
-        'price' => '$$$',
-        'image' => 'https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&w=900&q=80',
-        'summary' => 'Known for handmade pasta, creamy sauces, and date-night ambience.'
-    ],
-    [
-        'name' => 'Tokyo Flame',
-        'cuisine' => 'Japanese',
-        'rating' => '4.8 / 5',
-        'price' => '$$$',
-        'image' => 'https://images.unsplash.com/photo-1579027989536-b7b1f875659b?auto=format&fit=crop&w=900&q=80',
-        'summary' => 'Featured for sushi platters, robata dishes, and premium tasting menus.'
-    ]
-];
+    if ($role === 'restaurant') {
+        $roleTitle = 'Restaurant Owner Dashboard';
+        $roleDescription = 'Use the diner dashboard as your base and access extra business management tools.';
+    } elseif ($role === 'admin') {
+        $roleTitle = 'Admin Dashboard';
+        $roleDescription = 'Use platform-wide moderation tools while retaining the shared dashboard experience.';
+    }
+
+    $exampleRestaurants = [
+        [
+            'name' => 'Nasi & Co.',
+            'cuisine' => 'Malaysian',
+            'rating' => '4.7 / 5',
+            'price' => '$$',
+            'image' => 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=80',
+            'summary' => 'Popular for nasi lemak, grilled chicken, and quick lunch sets.'
+        ],
+        [
+            'name' => 'Pasta House',
+            'cuisine' => 'Italian',
+            'rating' => '4.5 / 5',
+            'price' => '$$$',
+            'image' => 'https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&w=900&q=80',
+            'summary' => 'Known for handmade pasta, creamy sauces, and date-night ambience.'
+        ],
+        [
+            'name' => 'Tokyo Flame',
+            'cuisine' => 'Japanese',
+            'rating' => '4.8 / 5',
+            'price' => '$$$',
+            'image' => 'https://images.unsplash.com/photo-1579027989536-b7b1f875659b?auto=format&fit=crop&w=900&q=80',
+            'summary' => 'Featured for sushi platters, robata dishes, and premium tasting menus.'
+        ]
+    ];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -55,8 +61,6 @@ $exampleRestaurants = [
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <?php include("includes/header.php"); ?>
-
     <div class="container py-5">
         <?php if (!$isAuthenticated): ?>
             <div class="alert alert-warning">You must log in first to access the dashboard.</div>
@@ -90,9 +94,9 @@ $exampleRestaurants = [
                                         <?php if ($role === 'restaurant'): ?>
                                             <a href="edit-profile.php?auth=1&role=restaurant" class="btn btn-outline-secondary btn-sm">Edit Restaurant</a>
                                         <?php elseif ($role === 'diner'): ?>
-                                            <a href="edit-profile.php?auth=1&role=diner" class="btn btn-outline-secondary btn-sm">Edit Profile</a>
+                                            <a href="view-profile.php?auth=1&role=diner" class="btn btn-outline-secondary btn-sm">View Profile</a>
                                         <?php else: ?>
-                                            <a href="edit-profile.php?auth=1&role=admin" class="btn btn-outline-secondary btn-sm">Edit Profile</a>
+                                            <a href="view-profile.php?auth=1&role=admin" class="btn btn-outline-secondary btn-sm">View Profile</a>
                                         <?php endif; ?>
                                     </div>
                                 </div>
@@ -110,8 +114,9 @@ $exampleRestaurants = [
                                 <ul class="mb-0">
                                     <li>Search restaurants</li>
                                     <li>View reviews</li>
-                                    <li>Edit profile</li>
+                                    <li>View profile</li>
                                 </ul>
+
                             <?php elseif ($role === 'restaurant'): ?>
                                 <p class="mb-2">As a restaurant owner, you keep the diner dashboard and gain extra business tools.</p>
                                 <ul class="mb-0">
@@ -119,6 +124,8 @@ $exampleRestaurants = [
                                     <li>Add a restaurant</li>
                                     <li>View customer reviews</li>
                                 </ul>
+
+
                             <?php else: ?>
                                 <p class="mb-2">As an admin, you keep the shared dashboard and gain moderation controls.</p>
                                 <ul class="mb-0">
@@ -181,6 +188,5 @@ $exampleRestaurants = [
     </div>
 
     <?php include("includes/footer.php"); ?>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
