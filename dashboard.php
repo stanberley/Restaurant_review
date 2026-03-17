@@ -5,6 +5,13 @@
         header("Location: login.php");
         exit();
     }
+    $role = $_SESSION['role'];
+
+    if ($role === 'admin') {
+        header("Location: admin-dashboard.php");
+        exit();
+    }
+    
     $role = isset($_SESSION['role']) ? $_SESSION['role'] : 'guest';
     $isAuthenticated = isset($_SESSION['role']);
 

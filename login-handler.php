@@ -1,6 +1,11 @@
 <?php
 session_start();
 
+if ($_SESSION['role'] === 'admin') {
+    header("Location: admin-dashboard.php");
+    exit();
+}
+
 if (isset($_GET['email']) && isset($_GET['name']) && isset($_GET['role'])) {
 
     $_SESSION['email'] = $_GET['email'];
