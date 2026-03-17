@@ -1,6 +1,7 @@
 <?php
-$isAuthenticated = isset($_GET['auth']) && $_GET['auth'] === '1';
-$currentRole = isset($_GET['role']) ? $_GET['role'] : 'guest';
+session_start();
+$isAuthenticated = isset($_SESSION['role']);
+$currentRole = $_SESSION['role'] ?? 'guest';
 ?>
 <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
     <div class="container-fluid">
@@ -24,18 +25,18 @@ $currentRole = isset($_GET['role']) ? $_GET['role'] : 'guest';
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
                             <?php if ($currentRole === 'diner'): ?>
-                                <li><a class="dropdown-item" href="edit-profile.php?auth=1&role=diner">Edit Profile</a></li>
+                                <li><a class="dropdown-item" href="view-profile.php">View Profile</a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="index.php">Log Out</a></li>
+                                <li><a class="dropdown-item" href="logout.php">Log Out</a></li>
                             <?php elseif ($currentRole === 'restaurant'): ?>
-                                <li><a class="dropdown-item" href="edit-profile.php?auth=1&role=restaurant">Edit Restaurant</a></li>
+                                <li><a class="dropdown-item" href="view-profile.php">View Restaurant</a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="index.php">Log Out</a></li>
+                                <li><a class="dropdown-item" href="logout.php">Log Out</a></li>
                             <?php elseif ($currentRole === 'admin'): ?>
-                                <li><a class="dropdown-item" href="edit-profile.php?auth=1&role=admin">Edit Profile</a></li>
-                                <li><a class="dropdown-item" href="moderation.php?auth=1&role=admin">Moderation</a></li>
+                                <li><a class="dropdown-item" href="view-profile.php">View Profile</a></li>
+                                <li><a class="dropdown-item" href="moderation.php">Moderation</a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="index.php">Log Out</a></li>
+                                <li><a class="dropdown-item" href="logout.php">Log Out</a></li>
                             <?php endif; ?>
                         </ul>
                     </li>

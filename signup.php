@@ -259,9 +259,15 @@ $currentRole = isset($_GET['role']) ? $_GET['role'] : 'guest';
 
             setTimeout(function () {
                 if (selectedType === 'restaurant') {
-                    window.location.href = 'dashboard.php?role=restaurant&auth=1';
+                    window.location.href ='login-handler.php?role=restaurant&email=' +
+                    encodeURIComponent(email) +
+                    '&name=' +
+                    encodeURIComponent(document.getElementById('signupName').value);
                 } else {
-                    window.location.href = 'dashboard.php?role=diner&auth=1';
+                    window.location.href ='login-handler.php?role=diner&email=' +
+                    encodeURIComponent(email) +
+                    '&name=' +
+                    encodeURIComponent(document.getElementById('signupName').value);
                 }
             }, 900);
         });
