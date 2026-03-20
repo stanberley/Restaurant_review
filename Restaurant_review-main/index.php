@@ -1,6 +1,10 @@
 <?php
-$isAuthenticated = isset($_GET['auth']) && $_GET['auth'] === '1';
-$currentRole = isset($_GET['role']) ? $_GET['role'] : 'guest';
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
+$isAuthenticated = isset($_SESSION['role']);
+$currentRole = $_SESSION['role'] ?? 'guest';
 $roleLabel = 'Guest';
 
 if ($currentRole === 'diner') {
@@ -52,7 +56,7 @@ $featuredReviews = [
                 <span class="badge bg-dark mb-3">Logged in as <?php echo htmlspecialchars($roleLabel); ?></span>
                 <div class="d-flex justify-content-center gap-3 flex-wrap">
                     <a href="#search" class="btn btn-primary">Search Restaurants</a>
-                    <a href="dashboard.php?auth=1&role=<?php echo urlencode($currentRole); ?>" class="btn btn-outline-dark">Go to Dashboard</a>
+                    <a href="dashboard.php" class="btn btn-outline-dark">Go to Dashboard</a>
                 </div>
             <?php else: ?>
                 <div class="d-flex justify-content-center gap-3 flex-wrap">
@@ -79,7 +83,7 @@ $featuredReviews = [
                                             <input type="text" id="searchKeyword" class="form-control" placeholder="Search restaurants">
                                         </div>
                                         <div class="col-md-4 d-flex align-items-end">
-                                            <a href="restaurant.php<?php echo $isAuthenticated ? '?auth=1&role=' . urlencode($currentRole) : ''; ?>" class="btn btn-primary w-100">Search</a>
+                                            <a href="restaurant.php" class="btn btn-primary w-100">Search</a>
                                         </div>
                                     </div>
                                 </form>

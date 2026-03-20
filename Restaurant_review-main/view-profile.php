@@ -9,6 +9,7 @@ if (!isset($_SESSION['role'])) {
 $name = $_SESSION['name'] ?? ' ';
 $email = $_SESSION['email'] ?? ' ';
 $role = $_SESSION['role'] ?? ' ';
+$pageTitle = 'View Profile';
 ?>
 
 <!DOCTYPE html>
@@ -51,12 +52,12 @@ $role = $_SESSION['role'] ?? ' ';
 
                 <div class="mt-4">
 
-                    <a href="edit-profile.php?auth=1&role=<?php echo urlencode($role); ?>" 
+                    <a href="edit-profile.php" 
                     class="btn btn-primary">
                     Edit Profile
                     </a>
 
-                    <a href="dashboard.php?auth=1&role=<?php echo urlencode($role); ?>" 
+                    <a href="dashboard.php" 
                     class="btn btn-secondary">
                     Back to Dashboard
                     </a>

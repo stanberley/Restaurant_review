@@ -1,6 +1,10 @@
 <?php
-$isAuthenticated = isset($_GET['auth']) && $_GET['auth'] === '1';
-$currentRole = isset($_GET['role']) ? $_GET['role'] : 'guest';
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
+$isAuthenticated = isset($_SESSION['role']);
+$currentRole = $_SESSION['role'] ?? 'guest';
 
 if (!$isAuthenticated || $currentRole !== 'admin') {
     header('Location: login.php');
@@ -44,7 +48,7 @@ if (isset($_GET['deleted'])) {
                     <h1 class="h3 mb-2">Admin Moderation</h1>
                     <p class="text-muted mb-0">Review user and restaurant records, then use the delete controls to moderate the platform interface.</p>
                 </div>
-                <a href="dashboard.php?auth=1&role=admin" class="btn btn-outline-secondary">Back to Dashboard</a>
+                <a href="dashboard.php" class="btn btn-outline-secondary">Back to Dashboard</a>
             </div>
 
             <?php if ($actionMessage !== ''): ?>
@@ -76,7 +80,7 @@ if (isset($_GET['deleted'])) {
                                                 </td>
                                                 <td><?php echo htmlspecialchars($user['role']); ?></td>
                                                 <td class="text-end">
-                                                    <a href="moderation.php?auth=1&role=admin&deleted=user" class="btn btn-outline-danger btn-sm">Delete</a>
+                                                    <a href="moderation.php?deleted=user" class="btn btn-outline-danger btn-sm">Delete</a>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -111,7 +115,7 @@ if (isset($_GET['deleted'])) {
                                                 </td>
                                                 <td><?php echo htmlspecialchars($restaurant['cuisine']); ?> · <?php echo htmlspecialchars($restaurant['price']); ?></td>
                                                 <td class="text-end">
-                                                    <a href="moderation.php?auth=1&role=admin&deleted=restaurant" class="btn btn-outline-danger btn-sm">Delete</a>
+                                                    <a href="moderation.php?deleted=restaurant" class="btn btn-outline-danger btn-sm">Delete</a>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
