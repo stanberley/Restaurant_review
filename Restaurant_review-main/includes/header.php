@@ -1,20 +1,22 @@
 <?php
-session_start();
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
 $isAuthenticated = isset($_SESSION['role']);
 $currentRole = $_SESSION['role'] ?? 'guest';
 ?>
 <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
     <div class="container-fluid">
-        <a class="navbar-brand" href="index.php<?php echo $isAuthenticated ? '?auth=1&role=' . urlencode($currentRole) : ''; ?>">Foodview</a>
+        <a class="navbar-brand" href="index.php">Foodview</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto align-items-lg-center">
-                <li class="nav-item"><a class="nav-link" href="index.php<?php echo $isAuthenticated ? '?auth=1&role=' . urlencode($currentRole) : ''; ?>">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="index.php">Home</a></li>
                 <?php if ($isAuthenticated): ?>
-                    <li class="nav-item"><a class="nav-link" href="index.php?auth=1&role=<?php echo urlencode($currentRole); ?>#search">Search</a></li>
-                    <li class="nav-item"><a class="nav-link" href="dashboard.php?auth=1&role=<?php echo urlencode($currentRole); ?>">Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="index.php#search">Search</a></li>
+                    <li class="nav-item"><a class="nav-link" href="dashboard.php">Dashboard</a></li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="profileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-person-circle me-1" viewBox="0 0 16 16">

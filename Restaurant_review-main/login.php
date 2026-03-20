@@ -1,6 +1,58 @@
 <?php
+session_start();
+require_once __DIR__ . '/includes/restaurant-db.php';
+
 $isAuthenticated = isset($_SESSION['role']);
-$currentRole =  $_SESSION['role'] ?? 'guest';
+$currentRole = $_SESSION['role'] ?? 'guest';
+$errorMessage = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
+
+    if ($email === '' || $password === '') {
+        $errorMessage = 'Please enter your email and password before logging in.';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errorMessage = 'Please enter a valid email address.';
+    } else {
+        $connection = getDatabaseConnection($errorMessage);
+
+        if ($connection) {
+            $stmt = $connection->prepare('SELECT idusers, name, email, password, userType FROM users WHERE email = ? LIMIT 1');
+
+            if (!$stmt) {
+                $errorMessage = 'Failed to prepare login query: ' . $connection->error;
+            } else {
+                $stmt->bind_param('s', $email);
+                $stmt->execute();
+                $stmt->bind_result($userId, $userName, $userEmail, $passwordHash, $userRole);
+                $userFound = $stmt->fetch();
+
+                if (!$userFound || !password_verify($password, $passwordHash)) {
+                    $errorMessage = 'Invalid email or password.';
+                } else {
+                    $_SESSION['idusers'] = (int) $userId;
+                    $_SESSION['name'] = $userName;
+                    $_SESSION['email'] = $userEmail;
+                    $_SESSION['role'] = $userRole;
+
+                    if ($_SESSION['role'] === 'admin') {
+                        header('Location: admin-dashboard.php');
+                    } else {
+                        header('Location: dashboard.php');
+                    }
+                    $stmt->close();
+                    $connection->close();
+                    exit;
+                }
+
+                $stmt->close();
+            }
+
+            $connection->close();
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -22,69 +74,25 @@ $currentRole =  $_SESSION['role'] ?? 'guest';
                     <p class="text-muted mb-0">Sign in to access your dashboard, search tools, and role-based features.</p>
                 </div>
 
-                <div id="loginError" class="alert alert-danger d-none"></div>
+                <?php if ($errorMessage !== ''): ?>
+                    <div class="alert alert-danger"><?php echo htmlspecialchars($errorMessage); ?></div>
+                <?php endif; ?>
 
-                <form id="loginForm" class="shadow-sm rounded bg-white p-4">
+                <form class="shadow-sm rounded bg-white p-4" method="post" action="login.php">
                     <div class="mb-3">
                         <label for="loginEmail" class="form-label">Email</label>
-                        <input type="email" id="loginEmail" class="form-control" required>
+                        <input type="email" id="loginEmail" name="email" class="form-control" value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>" required>
                     </div>
                     <div class="mb-2">
                         <label for="loginPassword" class="form-label">Password</label>
-                        <input type="password" id="loginPassword" class="form-control" required>
+                        <input type="password" id="loginPassword" name="password" class="form-control" required>
                     </div>
                     <button type="submit" class="btn btn-primary w-100 mb-3">Login</button>
-                    <p class="text-center text-muted small mb-0">Role is determined automatically based on your account.</p>
+                    <p class="text-center text-muted small mb-0">Role is determined by your userType in the users table.</p>
                 </form>
             </div>
         </div>
     </div>
-    <script>
-        const loginForm = document.getElementById('loginForm');
-        const loginError = document.getElementById('loginError');
-
-        function showLoginError(message) {
-            loginError.textContent = message;
-            loginError.classList.remove('d-none');
-        }
-
-        function hideLoginError() {
-            loginError.classList.add('d-none');
-        }
-
-        loginForm.addEventListener('submit', function (event) {
-            event.preventDefault();
-            hideLoginError();
-
-            const email = document.getElementById('loginEmail').value.trim().toLowerCase();
-            const password = document.getElementById('loginPassword').value;
-
-            if (!email || !password) {
-                showLoginError('Please enter your email and password before logging in.');
-                return;
-            }
-
-            if (password.length < 6) {
-                showLoginError('Password must contain at least 6 characters.');
-                return;
-            }
-
-            let mappedRole = 'diner';
-            if (email === 'admin' || email === 'admin@foodview.com') {
-                mappedRole = 'admin';
-            } else if (email.includes('owner') || email.includes('restaurant')) {
-                mappedRole = 'restaurant';
-            }
-
-            //TO BE CHANGED ONCE BACKEND IS IMPLEMENTED
-            const name = email.split('@')[0];
-
-            window.location.href =
-            'login-handler.php?role=' + encodeURIComponent(mappedRole) +
-            '&email=' + encodeURIComponent(email) +
-            '&name=' + encodeURIComponent(name);
-            });
-    </script>
     <?php include("includes/footer.php"); ?>
 
 </body>

@@ -91,7 +91,7 @@
                                     <div class="border rounded p-3 h-100 bg-light-subtle">
                                         <h4 class="h6">Search Restaurants</h4>
                                         <p class="mb-3 text-muted">Open restaurant listings and search the platform.</p>
-                                        <a href="index.php?auth=1&role=<?php echo urlencode($role); ?>#search" class="btn btn-outline-primary btn-sm">Go to Search</a>
+                                        <a href="index.php#search" class="btn btn-outline-primary btn-sm">Go to Search</a>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -99,11 +99,11 @@
                                         <h4 class="h6">Account Tools</h4>
                                         <p class="mb-3 text-muted">Access profile editing and role-specific account actions from here.</p>
                                         <?php if ($role === 'restaurant'): ?>
-                                            <a href="edit-profile.php?auth=1&role=restaurant" class="btn btn-outline-secondary btn-sm">Edit Restaurant</a>
+                                            <a href="edit-profile.php" class="btn btn-outline-secondary btn-sm">Edit Restaurant</a>
                                         <?php elseif ($role === 'diner'): ?>
-                                            <a href="view-profile.php?auth=1&role=diner" class="btn btn-outline-secondary btn-sm">View Profile</a>
+                                            <a href="view-profile.php" class="btn btn-outline-secondary btn-sm">View Profile</a>
                                         <?php else: ?>
-                                            <a href="view-profile.php?auth=1&role=admin" class="btn btn-outline-secondary btn-sm">View Profile</a>
+                                            <a href="view-profile.php" class="btn btn-outline-secondary btn-sm">View Profile</a>
                                         <?php endif; ?>
                                     </div>
                                 </div>
@@ -154,7 +154,7 @@
                                 <h2 class="h4 mb-1">Restaurant Management</h2>
                                 <p class="text-muted mb-0">Add another restaurant listing to your owner account or update your existing restaurant details.</p>
                             </div>
-                            <a href="add-restaurant.php?auth=1&role=restaurant" class="btn btn-primary">Add Restaurant</a>
+                            <a href="add-restaurant.php" class="btn btn-primary">Add Restaurant</a>
                         </div>
                     </div>
                 </div>
@@ -168,7 +168,7 @@
                                 <h2 class="h4 mb-1">Example Restaurants</h2>
                                 <p class="text-muted mb-0">Sample restaurants are showcased here so diners and restaurant owners can immediately explore featured listings.</p>
                             </div>
-                            <a href="restaurant.php?auth=1&role=<?php echo urlencode($role); ?>" class="btn btn-outline-primary btn-sm">Open Sample Review Page</a>
+                            <a href="restaurant.php" class="btn btn-outline-primary btn-sm">Open Sample Review Page</a>
                         </div>
 
                         <div class="row g-4">
@@ -182,7 +182,7 @@
                                             <p class="mb-1"><strong>Cuisine:</strong> <?php echo htmlspecialchars($restaurant['cuisine']); ?></p>
                                             <p class="mb-1"><strong>Rating:</strong> <?php echo htmlspecialchars($restaurant['rating']); ?></p>
                                             <p class="mb-3"><strong>Price:</strong> <?php echo htmlspecialchars($restaurant['price']); ?></p>
-                                            <a href="restaurant.php?auth=1&role=<?php echo urlencode($role); ?>" class="btn btn-primary btn-sm mt-auto">View Restaurant</a>
+                                            <a href="restaurant.php" class="btn btn-primary btn-sm mt-auto">View Restaurant</a>
                                         </div>
                                     </div>
                                 </div>
