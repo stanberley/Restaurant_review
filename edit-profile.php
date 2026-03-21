@@ -1,5 +1,6 @@
 <?php
     include('includes/header.php');
+    require_once __DIR__ . '/includes/restaurant-db.php';
 
 if (!isset($_SESSION['role'])) {
     header('Location: login.php');
@@ -11,7 +12,26 @@ $currentRole = $_SESSION['role'];
 $successMessage = '';
 $errorMessage = '';
 
+$restaurantProfile = [
+    'idRestaurants' => '',
+    'RestaurantName' => '',
+    'OwnerId' => '',
+    'Address' => '',
+    'PhoneNum' => '',
+    'CusineType' => '',
+    'OpeningHours' => '',
+    'ClosingHours' => '',
+    'OpeningDays' => '',
+    'PriceRange' => ''
+];
+
 $dinerProfile = [
+    'name' => $_SESSION['name'] ?? ' ',
+    'email' => $_SESSION['email'] ?? ' ',
+    'password' => $_SESSION['password'] ?? ' '
+];
+
+$adminProfile = [
     'name' => $_SESSION['name'] ?? ' ',
     'email' => $_SESSION['email'] ?? ' ',
     'password' => $_SESSION['password'] ?? ' '
@@ -19,31 +39,59 @@ $dinerProfile = [
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($currentRole === 'restaurant') {
-        $restaurantName = trim($_POST['restaurant_name'] ?? '');
-        $ownerName = trim($_POST['owner_name'] ?? '');
-        $email = trim($_POST['email'] ?? '');
-        $address = trim($_POST['address'] ?? '');
-        $phone = trim($_POST['phone'] ?? '');
-        $cuisine = trim($_POST['cuisine'] ?? '');
-        $hours = trim($_POST['hours'] ?? '');
-        $priceRange = trim($_POST['price_range'] ?? '');
+        $idRestaurants = trim($_POST['idRestaurants'] ?? '');
+        $restaurantName = trim($_POST['RestaurantName'] ?? '');
+        $ownerId = trim($_POST['OwnerId'] ?? '');
+        $address = trim($_POST['Address'] ?? '');
+        $phoneNum = trim($_POST['PhoneNum'] ?? '');
+        $cusineType = trim($_POST['CusineType'] ?? '');
+        $openingHours = trim($_POST['OpeningHours'] ?? '');
+        $closingHours = trim($_POST['ClosingHours'] ?? '');
+        $openingDays = trim($_POST['OpeningDays'] ?? '');
+        $priceRange = trim($_POST['PriceRange'] ?? '');
 
-        if ($restaurantName === '' || $ownerName === '' || $email === '' || $address === '' || $phone === '' || $cuisine === '' || $hours === '' || $priceRange === '') {
+        $restaurantProfile = [
+            'idRestaurants' => $idRestaurants,
+            'RestaurantName' => $restaurantName,
+            'OwnerId' => $ownerId,
+            'Address' => $address,
+            'PhoneNum' => $phoneNum,
+            'CusineType' => $cusineType,
+            'OpeningHours' => $openingHours,
+            'ClosingHours' => $closingHours,
+            'OpeningDays' => $openingDays,
+            'PriceRange' => $priceRange
+        ];
+
+        if ($idRestaurants === '' || $restaurantName === '' || $ownerId === '' || $address === '' || $phoneNum === '' || $cusineType === '' || $openingHours === '' || $closingHours === '' || $openingDays === '' || $priceRange === '') {
             $errorMessage = 'Please complete all restaurant fields before saving changes.';
+        } elseif (!ctype_digit($idRestaurants) || (int) $idRestaurants < 1 || !ctype_digit($ownerId) || (int) $ownerId < 1) {
+            $errorMessage = 'Restaurant ID and Owner ID must be valid positive integers.';
         } else {
-            $restaurantProfile = [
-                'restaurant_name' => $restaurantName,
-                'owner_name' => $ownerName,
-                'email' => $email,
-                'address' => $address,
-                'phone' => $phone,
-                'cuisine' => $cuisine,
-                'hours' => $hours,
-                'price_range' => $priceRange,
-                'menu_image' => trim($_POST['menu_image'] ?? ''),
-                'front_image' => trim($_POST['front_image'] ?? '')
+            $restaurantPayload = [
+                'idRestaurants' => (int) $idRestaurants,
+                'RestaurantName' => $restaurantName,
+                'OwnerId' => (int) $ownerId,
+                'Address' => $address,
+                'PhoneNum' => $phoneNum,
+                'CusineType' => $cusineType,
+                'OpeningHours' => $openingHours,
+                'ClosingHours' => $closingHours,
+                'OpeningDays' => $openingDays,
+                'PriceRange' => $priceRange
             ];
-            $successMessage = 'Restaurant information updated successfully.';
+
+            $connection = getDatabaseConnection($errorMessage);
+
+            if ($connection) {
+                if (ownerIdExists($connection, $restaurantPayload['OwnerId'], $errorMessage)) {
+                    if (updateRestaurantRecord($connection, $restaurantPayload, $errorMessage)) {
+                        $successMessage = 'Restaurant information updated successfully.';
+                    }
+                }
+
+                $connection->close();
+            }
         }
     } else {
         $name = trim($_POST['name'] ?? '');
@@ -81,6 +129,14 @@ if ($currentRole === 'restaurant') {
     $pageTitle = 'Edit Admin Profile';
     $pageDescription = 'Update your administrator account information.';
 }
+
+if (!empty($restaurantProfile['OpeningHours'])) {
+    $restaurantProfile['OpeningHours'] = date('H:i', strtotime($restaurantProfile['OpeningHours']));
+}
+
+if (!empty($restaurantProfile['ClosingHours'])) {
+    $restaurantProfile['ClosingHours'] = date('H:i', strtotime($restaurantProfile['ClosingHours']));
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -112,48 +168,48 @@ if ($currentRole === 'restaurant') {
                                 <div class="alert alert-success"><?php echo htmlspecialchars($successMessage); ?></div>
                             <?php endif; ?>
 
-                            <form method="post" action="edit-profile.php?auth=1&role=<?php echo urlencode($currentRole); ?>">
+                            <form method="post" action="edit-profile.php">
                                 <?php if ($currentRole === 'restaurant'): ?>
                                     <div class="row g-3">
                                         <div class="col-md-6">
-                                            <label for="restaurant_name" class="form-label">Restaurant Name</label>
-                                            <input type="text" class="form-control" id="restaurant_name" name="restaurant_name" value="<?php echo htmlspecialchars($restaurantProfile['restaurant_name']); ?>" required>
+                                            <label for="idRestaurants" class="form-label">Restaurant ID</label>
+                                            <input type="number" min="1" class="form-control" id="idRestaurants" name="idRestaurants" value="<?php echo htmlspecialchars($restaurantProfile['idRestaurants']); ?>" placeholder="Enter existing restaurant ID" required>
                                         </div>
                                         <div class="col-md-6">
-                                            <label for="owner_name" class="form-label">Restaurant Owner Name</label>
-                                            <input type="text" class="form-control" id="owner_name" name="owner_name" value="<?php echo htmlspecialchars($restaurantProfile['owner_name']); ?>" required>
+                                            <label for="RestaurantName" class="form-label">Restaurant Name</label>
+                                            <input type="text" class="form-control" id="RestaurantName" name="RestaurantName" value="<?php echo htmlspecialchars($restaurantProfile['RestaurantName']); ?>" required>
                                         </div>
                                         <div class="col-md-6">
-                                            <label for="email" class="form-label">Email</label>
-                                            <input type="email" class="form-control" id="email" name="email" value="<?php echo htmlspecialchars($restaurantProfile['email']); ?>" required>
+                                            <label for="OwnerId" class="form-label">Owner ID</label>
+                                            <input type="number" min="1" class="form-control" id="OwnerId" name="OwnerId" value="<?php echo htmlspecialchars($restaurantProfile['OwnerId']); ?>" required>
                                         </div>
                                         <div class="col-md-6">
-                                            <label for="phone" class="form-label">Phone Number</label>
-                                            <input type="text" class="form-control" id="phone" name="phone" value="<?php echo htmlspecialchars($restaurantProfile['phone']); ?>" required>
+                                            <label for="PhoneNum" class="form-label">Phone Number</label>
+                                            <input type="text" class="form-control" id="PhoneNum" name="PhoneNum" value="<?php echo htmlspecialchars($restaurantProfile['PhoneNum']); ?>" required>
                                         </div>
                                         <div class="col-12">
-                                            <label for="address" class="form-label">Address</label>
-                                            <input type="text" class="form-control" id="address" name="address" value="<?php echo htmlspecialchars($restaurantProfile['address']); ?>" required>
+                                            <label for="Address" class="form-label">Address</label>
+                                            <input type="text" class="form-control" id="Address" name="Address" value="<?php echo htmlspecialchars($restaurantProfile['Address']); ?>" required>
                                         </div>
                                         <div class="col-md-4">
-                                            <label for="cuisine" class="form-label">Cuisine Type</label>
-                                            <input type="text" class="form-control" id="cuisine" name="cuisine" value="<?php echo htmlspecialchars($restaurantProfile['cuisine']); ?>" required>
+                                            <label for="CusineType" class="form-label">Cuisine Type</label>
+                                            <input type="text" class="form-control" id="CusineType" name="CusineType" value="<?php echo htmlspecialchars($restaurantProfile['CusineType']); ?>" required>
                                         </div>
                                         <div class="col-md-4">
-                                            <label for="hours" class="form-label">Opening Hours</label>
-                                            <input type="text" class="form-control" id="hours" name="hours" value="<?php echo htmlspecialchars($restaurantProfile['hours']); ?>" required>
+                                            <label for="OpeningHours" class="form-label">Opening Hours</label>
+                                            <input type="time" class="form-control" id="OpeningHours" name="OpeningHours" value="<?php echo htmlspecialchars($restaurantProfile['OpeningHours']); ?>" required>
                                         </div>
                                         <div class="col-md-4">
-                                            <label for="price_range" class="form-label">Price Range</label>
-                                            <input type="text" class="form-control" id="price_range" name="price_range" value="<?php echo htmlspecialchars($restaurantProfile['price_range']); ?>" required>
+                                            <label for="ClosingHours" class="form-label">Closing Hours</label>
+                                            <input type="time" class="form-control" id="ClosingHours" name="ClosingHours" value="<?php echo htmlspecialchars($restaurantProfile['ClosingHours']); ?>" required>
                                         </div>
-                                        <div class="col-md-6">
-                                            <label for="menu_image" class="form-label">Menu Image Reference</label>
-                                            <input type="text" class="form-control" id="menu_image" name="menu_image" value="<?php echo htmlspecialchars($restaurantProfile['menu_image']); ?>">
+                                        <div class="col-md-4">
+                                            <label for="OpeningDays" class="form-label">Opening Days</label>
+                                            <input type="text" class="form-control" id="OpeningDays" name="OpeningDays" value="<?php echo htmlspecialchars($restaurantProfile['OpeningDays']); ?>" placeholder="e.g. Mon-Sun" required>
                                         </div>
-                                        <div class="col-md-6">
-                                            <label for="front_image" class="form-label">Restaurant Front Image</label>
-                                            <input type="text" class="form-control" id="front_image" name="front_image" value="<?php echo htmlspecialchars($restaurantProfile['front_image']); ?>">
+                                        <div class="col-md-4">
+                                            <label for="PriceRange" class="form-label">Price Range</label>
+                                            <input type="text" class="form-control" id="PriceRange" name="PriceRange" value="<?php echo htmlspecialchars($restaurantProfile['PriceRange']); ?>" required>
                                         </div>
                                     </div>
                                 <?php else: ?>
@@ -177,9 +233,9 @@ if ($currentRole === 'restaurant') {
                                 <div class="d-flex gap-3 flex-wrap mt-4">
                                     <button type="submit" class="btn btn-primary">Save Changes</button>
                                     <?php if ($currentRole === 'admin'): ?>
-                                        <a href="moderation.php?auth=1&role=admin" class="btn btn-outline-secondary">Go to Moderation</a>
+                                        <a href="moderation.php" class="btn btn-outline-secondary">Go to Moderation</a>
                                     <?php endif; ?>
-                                    <a href="dashboard.php?auth=1&role=<?php echo urlencode($currentRole); ?>" class="btn btn-outline-secondary">Back to Dashboard</a>
+                                    <a href="dashboard.php" class="btn btn-outline-secondary">Back to Dashboard</a>
                                 </div>
                             </form>
                         </div>

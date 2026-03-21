@@ -1,6 +1,229 @@
 <?php
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
+require_once __DIR__ . '/includes/restaurant-db.php';
+
 $isAuthenticated = isset($_GET['auth']) && $_GET['auth'] === '1';
 $currentRole = isset($_GET['role']) ? $_GET['role'] : 'guest';
+
+$name = '';
+$email = '';
+$userType = 'diner';
+$pwd_hashed = '';
+$errorMsg = '';
+$success = true;
+$restaurantName = '';
+$ownerName = '';
+$restaurantPhone = '';
+$restaurantAddress = '';
+$restaurantCuisine = '';
+$restaurantHours = '';
+$restaurantClosingHours = '';
+$restaurantOpeningDays = '';
+$restaurantPriceRange = '';
+$restaurantFrontImage = '';
+$restaurantMenuImages = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    try {
+        $name = isset($_POST['name']) ? trim($_POST['name']) : '';
+        $email = isset($_POST['email']) ? trim($_POST['email']) : '';
+        $userType = isset($_POST['userType']) ? trim($_POST['userType']) : 'diner';
+        $password = isset($_POST['password']) ? $_POST['password'] : '';
+        $confirmPassword = isset($_POST['confirmPassword']) ? $_POST['confirmPassword'] : '';
+        $restaurantName = isset($_POST['restaurantName']) ? trim($_POST['restaurantName']) : '';
+        $ownerName = isset($_POST['ownerName']) ? trim($_POST['ownerName']) : '';
+        $restaurantPhone = isset($_POST['restaurantPhone']) ? trim($_POST['restaurantPhone']) : '';
+        $restaurantAddress = isset($_POST['restaurantAddress']) ? trim($_POST['restaurantAddress']) : '';
+        $restaurantCuisine = isset($_POST['restaurantCuisine']) ? trim($_POST['restaurantCuisine']) : '';
+        $restaurantHours = isset($_POST['restaurantHours']) ? trim($_POST['restaurantHours']) : '';
+        $restaurantClosingHours = isset($_POST['restaurantClosingHours']) ? trim($_POST['restaurantClosingHours']) : '';
+        $restaurantOpeningDays = isset($_POST['restaurantOpeningDays']) ? trim($_POST['restaurantOpeningDays']) : '';
+        $restaurantPriceRange = isset($_POST['restaurantPriceRange']) ? trim($_POST['restaurantPriceRange']) : '';
+        $restaurantFrontImage = isset($_POST['restaurantFrontImage']) ? trim($_POST['restaurantFrontImage']) : '';
+        $restaurantMenuImages = isset($_POST['restaurantMenuImages']) ? trim($_POST['restaurantMenuImages']) : '';
+
+        if ($name === '' || $email === '') {
+            $errorMsg = 'Please provide your name and email.';
+            $success = false;
+        }
+        else if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errorMsg = 'Please enter a valid email address.';
+            $success = false;
+        }
+        else if (!in_array($userType, ['diner', 'restaurant'], true)) {
+            $errorMsg = 'Invalid user type selected.';
+            $success = false;
+        }
+        else if ($password === '' || $confirmPassword === '') {
+            $errorMsg = 'Please enter your password and confirmation password.';
+            $success = false;
+        }
+        else if (strlen($password) < 6) {
+            $errorMsg = 'Your password must be at least 6 characters long.';
+            $success = false;
+        }
+        else if ($password !== $confirmPassword) {
+            $errorMsg = 'Password and confirmation password do not match.';
+            $success = false;
+        }
+        else if ($userType === 'restaurant' && (
+            $restaurantName === '' ||
+            $ownerName === '' ||
+            $restaurantPhone === '' ||
+            $restaurantAddress === '' ||
+            $restaurantCuisine === '' ||
+            $restaurantHours === '' ||
+            $restaurantClosingHours === '' ||
+            $restaurantOpeningDays === '' ||
+            $restaurantPriceRange === ''
+        )) {
+            $errorMsg = 'Please complete all required restaurant details.';
+            $success = false;
+        }
+
+        if ($success) {
+            $pwd_hashed = password_hash($password, PASSWORD_DEFAULT);
+            $newUserId = saveUserToDB();
+
+            if ($success) {
+                $_SESSION['idusers'] = $newUserId;
+                $_SESSION['name'] = $name;
+                $_SESSION['email'] = $email;
+                $_SESSION['role'] = $userType;
+
+                header('Location: dashboard.php');
+                exit();
+            }
+        }
+    } catch (Throwable $e) {
+        $errorMsg = 'Signup failed due to a server error: ' . $e->getMessage();
+        $success = false;
+    }
+}
+
+/*
+* Helper function to write the user data to the database.
+*/
+function saveUserToDB()
+{
+    global $name, $email, $userType, $pwd_hashed, $errorMsg, $success;
+    global $restaurantName, $restaurantPhone, $restaurantAddress, $restaurantCuisine, $restaurantHours, $restaurantClosingHours, $restaurantOpeningDays, $restaurantPriceRange;
+    global $restaurantFrontImage, $restaurantMenuImages;
+
+    $conn = getDatabaseConnection($errorMsg);
+    if (!$conn) {
+        $success = false;
+        return 0;
+    }
+
+    try {
+        $conn->begin_transaction();
+
+        $stmt = $conn->prepare('INSERT INTO users (name, email, password, userType) VALUES (?, ?, ?, ?)');
+
+        if (!$stmt) {
+            $errorMsg = 'Prepare failed: (' . $conn->errno . ') ' . $conn->error;
+            $success = false;
+            $conn->close();
+            return 0;
+        }
+
+        $stmt->bind_param('ssss', $name, $email, $pwd_hashed, $userType);
+
+        if (!$stmt->execute()) {
+            $errorMsg = 'Execute failed: (' . $stmt->errno . ') ' . $stmt->error;
+            $success = false;
+            $stmt->close();
+            $conn->rollback();
+            $conn->close();
+            return 0;
+        }
+
+        $insertedId = (int) $conn->insert_id;
+        $stmt->close();
+
+        if ($userType === 'restaurant') {
+            $restaurantPayload = [
+                'RestaurantName' => $restaurantName,
+                'OwnerId' => $insertedId,
+                'Address' => $restaurantAddress,
+                'PhoneNum' => $restaurantPhone,
+                'CusineType' => $restaurantCuisine,
+                'OpeningHours' => $restaurantHours,
+                'ClosingHours' => $restaurantClosingHours,
+                'OpeningDays' => $restaurantOpeningDays,
+                'PriceRange' => $restaurantPriceRange
+            ];
+
+            $restaurantId = insertRestaurantRecord($conn, $restaurantPayload, $errorMsg);
+
+            if ($restaurantId === false) {
+                $success = false;
+                $conn->rollback();
+                $conn->close();
+                return 0;
+            }
+
+            $imageUrls = [];
+            if ($restaurantFrontImage !== '') {
+                $imageUrls[] = $restaurantFrontImage;
+            }
+
+            if ($restaurantMenuImages !== '') {
+                $menuParts = explode(',', $restaurantMenuImages);
+                foreach ($menuParts as $menuUrl) {
+                    $trimmedUrl = trim($menuUrl);
+                    if ($trimmedUrl !== '') {
+                        $imageUrls[] = $trimmedUrl;
+                    }
+                }
+            }
+
+            if (count($imageUrls) > 0) {
+                $imageStmt = $conn->prepare('INSERT INTO RestaurantImages (idRestaurants, ImageUrl) VALUES (?, ?)');
+
+                if (!$imageStmt) {
+                    $errorMsg = 'Prepare failed for RestaurantImages: (' . $conn->errno . ') ' . $conn->error;
+                    $success = false;
+                    $conn->rollback();
+                    $conn->close();
+                    return 0;
+                }
+
+                foreach ($imageUrls as $imageUrl) {
+                    $imageStmt->bind_param('is', $restaurantId, $imageUrl);
+                    if (!$imageStmt->execute()) {
+                        $errorMsg = 'Execute failed for RestaurantImages: (' . $imageStmt->errno . ') ' . $imageStmt->error;
+                        $success = false;
+                        $imageStmt->close();
+                        $conn->rollback();
+                        $conn->close();
+                        return 0;
+                    }
+                }
+
+                $imageStmt->close();
+            }
+        }
+
+        $conn->commit();
+        $conn->close();
+        return $insertedId;
+    } catch (Throwable $e) {
+        $errorMsg = 'Database operation failed: ' . $e->getMessage();
+        $success = false;
+        try {
+            $conn->rollback();
+        } catch (Throwable $rollbackError) {
+            // No-op: preserve original database error.
+        }
+        $conn->close();
+        return 0;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -22,31 +245,31 @@ $currentRole = isset($_GET['role']) ? $_GET['role'] : 'guest';
                     <p class="text-muted mb-0">Start by choosing your account type, then continue to complete the rest of your registration details.</p>
                 </div>
 
-                <div id="signupError" class="alert alert-danger d-none"></div>
+                <div id="signupError" class="alert alert-danger<?php echo $errorMsg !== '' ? '' : ' d-none'; ?>"><?php echo htmlspecialchars($errorMsg); ?></div>
                 <div id="signupSuccess" class="alert alert-success d-none"></div>
 
-                <form id="signupForm" class="shadow-sm rounded bg-white p-4">
+                <form id="signupForm" class="shadow-sm rounded bg-white p-4" method="post" action="signup.php">
                     <div id="stepOneSection">
                         <h4 class="mb-3">Step 1: Basic Account Setup</h4>
                         <div class="row g-3">
                             <div class="col-md-12">
                                 <label class="form-label d-block mb-2">User Type</label>
                                 <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="userType" id="userTypeDiner" value="diner" checked>
+                                    <input class="form-check-input" type="radio" name="userType" id="userTypeDiner" value="diner" <?php echo $userType === 'diner' ? 'checked' : ''; ?>>
                                     <label class="form-check-label" for="userTypeDiner">Diner</label>
                                 </div>
                                 <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="userType" id="userTypeRestaurant" value="restaurant">
+                                    <input class="form-check-input" type="radio" name="userType" id="userTypeRestaurant" value="restaurant" <?php echo $userType === 'restaurant' ? 'checked' : ''; ?>>
                                     <label class="form-check-label" for="userTypeRestaurant">Restaurant Owner</label>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <label for="signupName" class="form-label">Name</label>
-                                <input type="text" class="form-control" id="signupName" required>
+                                <input type="text" class="form-control" id="signupName" name="name" value="<?php echo htmlspecialchars($name); ?>" required>
                             </div>
                             <div class="col-md-6">
                                 <label for="signupEmail" class="form-label">Email</label>
-                                <input type="email" class="form-control" id="signupEmail" required>
+                                <input type="email" class="form-control" id="signupEmail" name="email" value="<?php echo htmlspecialchars($email); ?>" required>
                             </div>
                         </div>
 
@@ -64,11 +287,11 @@ $currentRole = isset($_GET['role']) ? $_GET['role'] : 'guest';
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
                                 <label for="signupPassword" class="form-label">Password</label>
-                                <input type="password" class="form-control" id="signupPassword" required>
+                                <input type="password" class="form-control" id="signupPassword" name="password" required>
                             </div>
                             <div class="col-md-6">
                                 <label for="signupConfirmPassword" class="form-label">Confirm Password</label>
-                                <input type="password" class="form-control" id="signupConfirmPassword" required>
+                                <input type="password" class="form-control" id="signupConfirmPassword" name="confirmPassword" required>
                             </div>
                         </div>
 
@@ -93,44 +316,52 @@ $currentRole = isset($_GET['role']) ? $_GET['role'] : 'guest';
                                 </div>
                                 <div class="col-md-6">
                                     <label for="restaurantName" class="form-label">Restaurant Name</label>
-                                    <input type="text" class="form-control" id="restaurantName">
+                                    <input type="text" class="form-control" id="restaurantName" name="restaurantName" value="<?php echo htmlspecialchars($restaurantName); ?>">
                                 </div>
                                 <div class="col-md-6">
                                     <label for="ownerName" class="form-label">Owner Name</label>
-                                    <input type="text" class="form-control" id="ownerName">
+                                    <input type="text" class="form-control" id="ownerName" name="ownerName" value="<?php echo htmlspecialchars($ownerName); ?>">
                                 </div>
                                 <div class="col-md-6">
                                     <label for="restaurantPhone" class="form-label">Phone Number</label>
-                                    <input type="text" class="form-control" id="restaurantPhone">
+                                    <input type="text" class="form-control" id="restaurantPhone" name="restaurantPhone" value="<?php echo htmlspecialchars($restaurantPhone); ?>">
                                 </div>
                                 <div class="col-md-12">
                                     <label for="restaurantAddress" class="form-label">Address</label>
-                                    <textarea class="form-control" id="restaurantAddress" rows="3"></textarea>
+                                    <textarea class="form-control" id="restaurantAddress" name="restaurantAddress" rows="3"><?php echo htmlspecialchars($restaurantAddress); ?></textarea>
                                 </div>
                                 <div class="col-md-4">
                                     <label for="restaurantCuisine" class="form-label">Type of Cuisine</label>
-                                    <input type="text" class="form-control" id="restaurantCuisine">
+                                    <input type="text" class="form-control" id="restaurantCuisine" name="restaurantCuisine" value="<?php echo htmlspecialchars($restaurantCuisine); ?>">
                                 </div>
                                 <div class="col-md-4">
                                     <label for="restaurantHours" class="form-label">Opening Hours</label>
-                                    <input type="text" class="form-control" id="restaurantHours" placeholder="e.g. 10:00 AM - 10:00 PM">
+                                    <input type="time" class="form-control" id="restaurantHours" name="restaurantHours" value="<?php echo htmlspecialchars($restaurantHours); ?>">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="restaurantClosingHours" class="form-label">Closing Hours</label>
+                                    <input type="time" class="form-control" id="restaurantClosingHours" name="restaurantClosingHours" value="<?php echo htmlspecialchars($restaurantClosingHours); ?>">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="restaurantOpeningDays" class="form-label">Opening Days</label>
+                                    <input type="text" class="form-control" id="restaurantOpeningDays" name="restaurantOpeningDays" value="<?php echo htmlspecialchars($restaurantOpeningDays); ?>" placeholder="e.g. Mon-Sun">
                                 </div>
                                 <div class="col-md-4">
                                     <label for="restaurantPriceRange" class="form-label">Price Range</label>
-                                    <select class="form-select" id="restaurantPriceRange">
+                                    <select class="form-select" id="restaurantPriceRange" name="restaurantPriceRange">
                                         <option value="">Select a price range</option>
-                                        <option value="$">$</option>
-                                        <option value="$$">$$</option>
-                                        <option value="$$$">$$$</option>
+                                        <option value="$" <?php echo $restaurantPriceRange === '$' ? 'selected' : ''; ?>>$</option>
+                                        <option value="$$" <?php echo $restaurantPriceRange === '$$' ? 'selected' : ''; ?>>$$</option>
+                                        <option value="$$$" <?php echo $restaurantPriceRange === '$$$' ? 'selected' : ''; ?>>$$$</option>
                                     </select>
                                 </div>
                                 <div class="col-md-6">
                                     <label for="restaurantFrontImage" class="form-label">Restaurant Front Image URL</label>
-                                    <input type="url" class="form-control" id="restaurantFrontImage" placeholder="https://">
+                                    <input type="url" class="form-control" id="restaurantFrontImage" name="restaurantFrontImage" value="<?php echo htmlspecialchars($restaurantFrontImage); ?>" placeholder="https://">
                                 </div>
                                 <div class="col-md-6">
                                     <label for="restaurantMenuImages" class="form-label">Menu Image URLs</label>
-                                    <input type="text" class="form-control" id="restaurantMenuImages" placeholder="Comma-separated URLs">
+                                    <input type="text" class="form-control" id="restaurantMenuImages" name="restaurantMenuImages" value="<?php echo htmlspecialchars($restaurantMenuImages); ?>" placeholder="Comma-separated URLs">
                                 </div>
                             </div>
                         </div>
@@ -209,7 +440,6 @@ $currentRole = isset($_GET['role']) ? $_GET['role'] : 'guest';
         });
 
         signupForm.addEventListener('submit', function (event) {
-            event.preventDefault();
             hideSignupMessages();
 
             const selectedType = getSelectedUserType();
@@ -218,16 +448,19 @@ $currentRole = isset($_GET['role']) ? $_GET['role'] : 'guest';
             const confirmPassword = document.getElementById('signupConfirmPassword').value;
 
             if (!password || !confirmPassword) {
+                event.preventDefault();
                 showSignupError('Please enter your password and confirmation password.');
                 return;
             }
 
             if (password.length < 6) {
+                event.preventDefault();
                 showSignupError('Your password must be at least 6 characters long.');
                 return;
             }
 
             if (password !== confirmPassword) {
+                event.preventDefault();
                 showSignupError('Password and confirmation password do not match.');
                 return;
             }
@@ -240,6 +473,8 @@ $currentRole = isset($_GET['role']) ? $_GET['role'] : 'guest';
                     { id: 'restaurantPhone', label: 'phone number' },
                     { id: 'restaurantCuisine', label: 'type of cuisine' },
                     { id: 'restaurantHours', label: 'opening hours' },
+                    { id: 'restaurantClosingHours', label: 'closing hours' },
+                    { id: 'restaurantOpeningDays', label: 'opening days' },
                     { id: 'restaurantPriceRange', label: 'price range' },
                     { id: 'restaurantFrontImage', label: 'restaurant front image URL' },
                     { id: 'restaurantMenuImages', label: 'menu image URLs' }
@@ -248,28 +483,12 @@ $currentRole = isset($_GET['role']) ? $_GET['role'] : 'guest';
                 for (const field of requiredRestaurantFields) {
                     const value = document.getElementById(field.id).value.trim();
                     if (!value) {
+                        event.preventDefault();
                         showSignupError('Please enter the ' + field.label + ' before creating a restaurant account.');
                         return;
                     }
                 }
             }
-
-            signupSuccess.textContent = 'Account created successfully for ' + email + '.';
-            signupSuccess.classList.remove('d-none');
-
-            setTimeout(function () {
-                if (selectedType === 'restaurant') {
-                    window.location.href ='login-handler.php?role=restaurant&email=' +
-                    encodeURIComponent(email) +
-                    '&name=' +
-                    encodeURIComponent(document.getElementById('signupName').value);
-                } else {
-                    window.location.href ='login-handler.php?role=diner&email=' +
-                    encodeURIComponent(email) +
-                    '&name=' +
-                    encodeURIComponent(document.getElementById('signupName').value);
-                }
-            }, 900);
         });
     </script>
 </body>
