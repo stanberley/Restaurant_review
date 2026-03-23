@@ -81,9 +81,17 @@ $featuredReviews = [
                                         <div class="col-md-8">
                                             <label for="searchKeyword" class="form-label">Restaurant, cuisine, or location</label>
                                             <input type="text" id="searchKeyword" class="form-control" placeholder="Search restaurants">
+                                            <script>
+                                            document.getElementById('searchBtn').addEventListener('click', function(e) {
+                                                e.preventDefault();
+                                                const q = document.getElementById('searchKeyword').value;
+                                                window.location.href = 'restaurant.php?search=' + encodeURIComponent(q);
+                                            });
+                                            </script>
                                         </div>
                                         <div class="col-md-4 d-flex align-items-end">
-                                            <a href="restaurant.php" class="btn btn-primary w-100">Search</a>
+                                            <a href="restaurant.php?search=<?php echo urlencode($_GET['q'] ?? ''); ?>" 
+                                                class="btn btn-primary w-100" id="searchBtn">Search</a>
                                         </div>
                                     </div>
                                 </form>

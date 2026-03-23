@@ -47,7 +47,8 @@ if ($connection) {
                 ];
 
                 if (insertReviewRecord($connection, $reviewPayload, $reviewError)) {
-                    header('Location: restaurant.php?id=' . urlencode((string) $restaurantId) . '&review=saved');
+                    // Redirect to tip prompt after a successful review submission
+                    header('Location: tip-prompt.php?restaurant_id=' . urlencode((string) $restaurantId));
                     $connection->close();
                     exit;
                 }
@@ -96,6 +97,7 @@ if ($heroImage === '') {
     <title>Foodview - Restaurant Page</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 </head>
 <body>
     <?php include("includes/header.php"); ?>
@@ -165,6 +167,10 @@ if ($heroImage === '') {
                         </div>
                         <div class="mt-4">
                             <button type="submit" class="btn btn-primary">Submit Review</button>
+                            <a href="tip-prompt.php?restaurant_id=<?php echo $restaurantId; ?>"
+                                class="btn btn-warning ms-2">
+                                    <i class="bi bi-cash-coin"></i> Leave a Tip
+                            </a>
                         </div>
                     </form>
                 </div>

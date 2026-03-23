@@ -8,13 +8,45 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     exit();
 }
 
+require_once __DIR__ . '/includes/restaurant-db.php';
+
 $adminName = $_SESSION['name'] ?? 'Admin';
 
-$totalUsers = (isset($_SESSION['users']) && is_array($_SESSION['users'])) ? count($_SESSION['users']) : 128;
-$totalRestaurants = (isset($_SESSION['restaurants']) && is_array($_SESSION['restaurants'])) ? count($_SESSION['restaurants']) : 42;
-$flaggedReviews = (isset($_SESSION['flagged_reviews']) && is_array($_SESSION['flagged_reviews'])) ? count($_SESSION['flagged_reviews']) : 9;
-$activeSessions = 18;
+// ── Database connection ──────────────────────────────────────────────────────
+$dbError = '';
+$conn = getDatabaseConnection($dbError);
 
+// ── Stat counters ────────────────────────────────────────────────────────────
+$totalUsers        = 0;
+$totalRestaurants  = 0;
+$flaggedReviews    = 0;   // reviews with Rating <= 2
+$activeSessions    = 18;  // no sessions table — kept as a static indicator
+
+if ($conn) {
+
+    // Total registered users
+    $result = $conn->query('SELECT COUNT(*) AS cnt FROM users');
+    if ($result) {
+        $totalUsers = (int) $result->fetch_assoc()['cnt'];
+        $result->free();
+    }
+
+    // Total restaurant listings
+    $result = $conn->query('SELECT COUNT(*) AS cnt FROM Restaurants');
+    if ($result) {
+        $totalRestaurants = (int) $result->fetch_assoc()['cnt'];
+        $result->free();
+    }
+
+    // Flagged reviews = reviews with a rating of 2 stars or below
+    $result = $conn->query('SELECT COUNT(*) AS cnt FROM reviews WHERE Rating <= 2');
+    if ($result) {
+        $flaggedReviews = (int) $result->fetch_assoc()['cnt'];
+        $result->free();
+    }
+}
+
+// ── Stat cards ───────────────────────────────────────────────────────────────
 $statCards = [
     [
         'title' => 'Total Users',
@@ -32,7 +64,7 @@ $statCards = [
         'title' => 'Flagged Reviews',
         'value' => $flaggedReviews,
         'icon'  => 'bi-flag-fill',
-        'desc'  => 'Items needing moderation'
+        'desc'  => 'Reviews rated 2 stars or below'
     ],
     [
         'title' => 'Active Sessions',
@@ -42,64 +74,107 @@ $statCards = [
     ]
 ];
 
+// ── Quick actions (unchanged — no DB data needed) ────────────────────────────
 $quickActions = [
     [
-        'title' => 'Moderation Panel',
-        'desc'  => 'View all users and restaurants, then remove items when necessary.',
-        'icon'  => 'bi-kanban-fill',
-        'link'  => 'moderation.php',
-        'button'=> 'Open Moderation',
-        'class' => 'primary'
+        'title'  => 'Moderation Panel',
+        'desc'   => 'View all users and restaurants, then remove items when necessary.',
+        'icon'   => 'bi-kanban-fill',
+        'link'   => 'moderation.php',
+        'button' => 'Open Moderation',
+        'class'  => 'primary'
     ],
     [
-        'title' => 'Edit Admin Profile',
-        'desc'  => 'Update admin information, profile details, and account preferences.',
-        'icon'  => 'bi-person-circle',
-        'link'  => 'edit-profile.php',
-        'button'=> 'Edit Profile',
-        'class' => 'dark'
+        'title'  => 'Edit Admin Profile',
+        'desc'   => 'Update admin information, profile details, and account preferences.',
+        'icon'   => 'bi-person-circle',
+        'link'   => 'edit-profile.php',
+        'button' => 'Edit Profile',
+        'class'  => 'dark'
     ],
     [
-        'title' => 'Review Homepage',
-        'desc'  => 'Check the public-facing restaurant experience from the user perspective.',
-        'icon'  => 'bi-window-stack',
-        'link'  => 'index.php',
-        'button'=> 'Open Homepage',
-        'class' => 'light'
+        'title'  => 'Review Homepage',
+        'desc'   => 'Check the public-facing restaurant experience from the user perspective.',
+        'icon'   => 'bi-window-stack',
+        'link'   => 'index.php',
+        'button' => 'Open Homepage',
+        'class'  => 'light'
     ],
     [
-        'title' => 'Log Out',
-        'desc'  => 'End the current admin session securely.',
-        'icon'  => 'bi-box-arrow-right',
-        'link'  => 'logout.php',
-        'button'=> 'Log Out',
-        'class' => 'danger'
+        'title'  => 'Log Out',
+        'desc'   => 'End the current admin session securely.',
+        'icon'   => 'bi-box-arrow-right',
+        'link'   => 'logout.php',
+        'button' => 'Log Out',
+        'class'  => 'danger'
     ]
 ];
 
-$recentActivities = [
-    [
-        'title' => 'New restaurant submitted',
-        'meta'  => 'Pasta House • 12 minutes ago',
-        'status'=> 'Pending Review'
-    ],
-    [
-        'title' => 'User account removed',
-        'meta'  => 'Action by admin • 45 minutes ago',
-        'status'=> 'Completed'
-    ],
-    [
-        'title' => 'Review flagged by community',
-        'meta'  => 'Tokyo Flame review • 1 hour ago',
-        'status'=> 'Needs Attention'
-    ],
-    [
-        'title' => 'Restaurant profile updated',
-        'meta'  => 'Nasi & Co. • 2 hours ago',
-        'status'=> 'Synced'
-    ]
-];
+// ── Recent activity: last 4 reviews from the DB ──────────────────────────────
+$recentActivities = [];
 
+if ($conn) {
+    $stmt = $conn->prepare(
+        'SELECT rv.idReview, rv.Rating, rv.Comments, rv.ReviewDate,
+                u.name   AS ReviewerName,
+                r.RestaurantName
+         FROM   reviews rv
+         INNER  JOIN users       u ON u.idusers        = rv.UserId
+         INNER  JOIN Restaurants r ON r.idRestaurants  = rv.RestaurantID
+         ORDER  BY rv.ReviewDate DESC
+         LIMIT  4'
+    );
+
+    if ($stmt) {
+        $stmt->execute();
+        $rows = fetchAllAssocFromStatement($stmt);
+        $stmt->close();
+
+        foreach ($rows as $row) {
+            // Build a human-readable "time ago" label
+            $reviewTime = strtotime($row['ReviewDate']);
+            $diffMins   = max(0, (int) round((time() - $reviewTime) / 60));
+
+            if ($diffMins < 60) {
+                $timeLabel = $diffMins . ' minute' . ($diffMins !== 1 ? 's' : '') . ' ago';
+            } elseif ($diffMins < 1440) {
+                $hrs = (int) round($diffMins / 60);
+                $timeLabel = $hrs . ' hour' . ($hrs !== 1 ? 's' : '') . ' ago';
+            } else {
+                $days = (int) round($diffMins / 1440);
+                $timeLabel = $days . ' day' . ($days !== 1 ? 's' : '') . ' ago';
+            }
+
+            // Flag low-rated reviews as needing attention
+            $rating = (int) $row['Rating'];
+            if ($rating <= 2) {
+                $status = 'Needs Attention';
+            } elseif ($rating === 3) {
+                $status = 'Pending Review';
+            } else {
+                $status = 'Synced';
+            }
+
+            $recentActivities[] = [
+                'title'  => 'Review submitted for ' . $row['RestaurantName'],
+                'meta'   => htmlspecialchars($row['ReviewerName']) . ' · ' . $timeLabel
+                            . ' · ' . $rating . '★',
+                'status' => $status
+            ];
+        }
+    }
+}
+
+// Fallback if no reviews are returned
+if (empty($recentActivities)) {
+    $recentActivities[] = [
+        'title'  => 'No recent review activity',
+        'meta'   => 'Nothing to display yet',
+        'status' => 'Up to Date'
+    ];
+}
+
+// ── System status ────────────────────────────────────────────────────────────
 $systemStatus = [
     [
         'label' => 'Authentication',
@@ -108,8 +183,8 @@ $systemStatus = [
     ],
     [
         'label' => 'Moderation Queue',
-        'value' => '9 items open',
-        'good'  => false
+        'value' => $flaggedReviews > 0 ? $flaggedReviews . ' item' . ($flaggedReviews !== 1 ? 's' : '') . ' open' : 'All clear',
+        'good'  => $flaggedReviews === 0
     ],
     [
         'label' => 'User Sessions',
@@ -122,6 +197,11 @@ $systemStatus = [
         'good'  => true
     ]
 ];
+
+// Close DB connection
+if ($conn) {
+    $conn->close();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -139,6 +219,14 @@ $systemStatus = [
 <?php include("includes/header.php"); ?>
 
 <div class="container py-5">
+
+    <?php if ($dbError !== ''): ?>
+        <div class="alert alert-warning d-flex align-items-center mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <span>Database connection issue: <?php echo htmlspecialchars($dbError); ?></span>
+        </div>
+    <?php endif; ?>
+
     <section class="admin-hero mb-4">
         <div class="row align-items-center g-4">
             <div class="col-lg-8">
@@ -268,7 +356,7 @@ $systemStatus = [
                 <div class="admin-panel-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <div>
                         <h2 class="admin-section-title mb-1">Recent Activity</h2>
-                        <p class="admin-section-subtitle mb-0">A simple view of the latest admin-relevant actions.</p>
+                        <p class="admin-section-subtitle mb-0">The 4 most recent reviews submitted to the platform.</p>
                     </div>
                 </div>
 
