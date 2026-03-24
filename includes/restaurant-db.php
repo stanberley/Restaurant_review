@@ -297,6 +297,25 @@ function getFirstRestaurantId($connection, &$errorMessage)
     return (int) $row['idRestaurants'];
 }
 
+function getRestaurantsByOwnerId($connection, $ownerId, &$errorMessage)
+{
+    $errorMessage = '';
+    $stmt = $connection->prepare(
+        'SELECT idRestaurants, RestaurantName FROM Restaurants WHERE OwnerId = ? ORDER BY RestaurantName ASC'
+    );
+
+    if (!$stmt) {
+        $errorMessage = 'Failed to prepare owner restaurants lookup: ' . $connection->error;
+        return [];
+    }
+
+    $stmt->bind_param('i', $ownerId);
+    $stmt->execute();
+    $rows = fetchAllAssocFromStatement($stmt);
+    $stmt->close();
+    return $rows;
+}
+
 function getRestaurantReviews($connection, $restaurantId, &$errorMessage)
 {
     $errorMessage = '';

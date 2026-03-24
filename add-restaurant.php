@@ -13,46 +13,68 @@ if (!$isAuthenticated || $currentRole !== 'restaurant') {
     exit;
 }
 
+// Auto-fill OwnerId from session
+$sessionOwnerId = (int) ($_SESSION['idusers'] ?? 0);
+
 $successMessage = '';
 $errorMessage = '';
+
+// Build time options: 12:00 AM to 11:30 PM in 30-minute increments
+function buildTimeOptions($selectedValue = '') {
+    $options = '<option value="">-- Select Time --</option>';
+    for ($h = 0; $h < 24; $h++) {
+        foreach ([0, 30] as $m) {
+            $value = sprintf('%02d:%02d', $h, $m);
+            $label = date('g:i A', strtotime($value));
+            $selected = ($selectedValue === $value) ? ' selected' : '';
+            $options .= '<option value="' . $value . '"' . $selected . '>' . $label . '</option>';
+        }
+    }
+    return $options;
+}
+
+// Opening days options
+$openingDaysOptions = [
+    'Mon-Fri'  => 'Mon-Fri (Weekdays)',
+    'Mon-Sat'  => 'Mon-Sat',
+    'Mon-Sun'  => 'Mon-Sun (Everyday)',
+    'Sat-Sun'  => 'Sat-Sun (Weekends)',
+    'Tue-Sun'  => 'Tue-Sun',
+    'Wed-Sun'  => 'Wed-Sun',
+];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $requiredFields = [
             'RestaurantName' => 'restaurant name',
-            'OwnerId' => 'owner ID',
-            'Address' => 'address',
-            'PhoneNum' => 'phone number',
-            'CusineType' => 'type of cuisine',
-            'OpeningHours' => 'opening hours',
-            'ClosingHours' => 'closing hours',
-            'OpeningDays' => 'opening days',
-            'PriceRange' => 'price range'
+            'Address'        => 'address',
+            'PhoneNum'       => 'phone number',
+            'CusineType'     => 'type of cuisine',
+            'OpeningHours'   => 'opening hours',
+            'ClosingHours'   => 'closing hours',
+            'OpeningDays'    => 'opening days',
+            'PriceRange'     => 'price range'
         ];
 
         foreach ($requiredFields as $field => $label) {
             if (trim($_POST[$field] ?? '') === '') {
-                $errorMessage = 'Please enter the ' . $label . ' before adding a restaurant.';
+                $errorMessage = 'Please select the ' . $label . ' before adding a restaurant.';
                 break;
             }
-        }
-
-        if ($errorMessage === '' && (!ctype_digit(trim($_POST['OwnerId'] ?? '')) || (int) $_POST['OwnerId'] < 1)) {
-            $errorMessage = 'Owner ID must be a valid positive integer.';
         }
 
         if ($errorMessage === '') {
             $restaurantPayload = [
                 'IdRestaurants' => null,
                 'RestaurantName' => trim($_POST['RestaurantName']),
-                'OwnerId' => (int) trim($_POST['OwnerId']),
-                'Address' => trim($_POST['Address']),
-                'PhoneNum' => trim($_POST['PhoneNum']),
-                'CusineType' => trim($_POST['CusineType']),
-                'OpeningHours' => trim($_POST['OpeningHours']),
-                'ClosingHours' => trim($_POST['ClosingHours']),
-                'OpeningDays' => trim($_POST['OpeningDays']),
-                'PriceRange' => trim($_POST['PriceRange'])
+                'OwnerId'        => $sessionOwnerId,
+                'Address'        => trim($_POST['Address']),
+                'PhoneNum'       => trim($_POST['PhoneNum']),
+                'CusineType'     => trim($_POST['CusineType']),
+                'OpeningHours'   => trim($_POST['OpeningHours']),
+                'ClosingHours'   => trim($_POST['ClosingHours']),
+                'OpeningDays'    => trim($_POST['OpeningDays']),
+                'PriceRange'     => trim($_POST['PriceRange'])
             ];
 
             $connection = getDatabaseConnection($errorMessage);
@@ -62,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $insertedId = insertRestaurantRecord($connection, $restaurantPayload, $errorMessage);
 
                     if ($insertedId !== false) {
-                        $successMessage = 'Restaurant added successfully. New IdRestaurants: ' . $insertedId . '.';
+                        $successMessage = 'Restaurant added successfully. New Restaurant ID: ' . $insertedId . '.';
                         $_POST = [];
                     }
                 }
@@ -74,6 +96,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errorMessage = 'Restaurant creation failed due to a server error: ' . $e->getMessage();
     }
 }
+
+$postOpeningHours  = $_POST['OpeningHours'] ?? '';
+$postClosingHours  = $_POST['ClosingHours'] ?? '';
+$postOpeningDays   = $_POST['OpeningDays'] ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -87,87 +113,113 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
     <?php include('includes/header.php'); ?>
 
-    <main class="py-5">
-        <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-lg-8">
-                    <div class="card shadow-sm border-0">
-                        <div class="card-body p-4 p-md-5">
-                            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
-                                <div>
-                                    <h1 class="h3 mb-2">Add Restaurant</h1>
-                                    <p class="text-muted mb-0">Create an additional restaurant listing under your restaurant-owner account.</p>
-                                </div>
-                                <a href="dashboard.php" class="btn btn-outline-secondary">Back to Dashboard</a>
-                            </div>
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="mb-4 text-center">
+                    <h2>Add a New Restaurant</h2>
+                    <p class="text-muted mb-0">Fill in your restaurant details below to create a new listing under your account.</p>
+                </div>
 
-                            <?php if ($errorMessage !== ''): ?>
-                                <div class="alert alert-danger"><?php echo htmlspecialchars($errorMessage); ?></div>
-                            <?php endif; ?>
+                <?php if ($errorMessage !== ''): ?>
+                    <div class="alert alert-danger"><?php echo htmlspecialchars($errorMessage); ?></div>
+                <?php endif; ?>
 
-                            <?php if ($successMessage !== ''): ?>
-                                <div class="alert alert-success"><?php echo htmlspecialchars($successMessage); ?></div>
-                            <?php endif; ?>
+                <?php if ($successMessage !== ''): ?>
+                    <div class="alert alert-success"><?php echo htmlspecialchars($successMessage); ?></div>
+                <?php endif; ?>
 
-                            <form method="post" action="add-restaurant.php">
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label for="RestaurantName" class="form-label">Restaurant Name</label>
-                                        <input type="text" class="form-control" id="RestaurantName" name="RestaurantName" value="<?php echo htmlspecialchars($_POST['RestaurantName'] ?? ''); ?>" required>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label for="OwnerId" class="form-label">Owner ID</label>
-                                        <input type="number" min="1" class="form-control" id="OwnerId" name="OwnerId" value="<?php echo htmlspecialchars($_POST['OwnerId'] ?? ''); ?>" required>
-                                    </div>
-                                    <div class="col-12">
-                                        <label for="Address" class="form-label">Address</label>
-                                        <input type="text" class="form-control" id="Address" name="Address" value="<?php echo htmlspecialchars($_POST['Address'] ?? ''); ?>" required>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label for="PhoneNum" class="form-label">Phone Number</label>
-                                        <input type="text" class="form-control" id="PhoneNum" name="PhoneNum" value="<?php echo htmlspecialchars($_POST['PhoneNum'] ?? ''); ?>" required>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label for="CusineType" class="form-label">Type of Cuisine</label>
-                                        <input type="text" class="form-control" id="CusineType" name="CusineType" value="<?php echo htmlspecialchars($_POST['CusineType'] ?? ''); ?>" required>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label for="OpeningHours" class="form-label">Opening Hours</label>
-                                        <input type="time" class="form-control" id="OpeningHours" name="OpeningHours" value="<?php echo htmlspecialchars($_POST['OpeningHours'] ?? ''); ?>" required>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label for="ClosingHours" class="form-label">Closing Hours</label>
-                                        <input type="time" class="form-control" id="ClosingHours" name="ClosingHours" value="<?php echo htmlspecialchars($_POST['ClosingHours'] ?? ''); ?>" required>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label for="OpeningDays" class="form-label">Opening Days</label>
-                                        <input type="text" class="form-control" id="OpeningDays" name="OpeningDays" value="<?php echo htmlspecialchars($_POST['OpeningDays'] ?? ''); ?>" placeholder="e.g. Mon-Sun" required>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label for="PriceRange" class="form-label">Price Range</label>
-                                        <select class="form-select" id="PriceRange" name="PriceRange" required>
-                                            <option value="">Select a price range</option>
-                                            <option value="$" <?php echo (($_POST['PriceRange'] ?? '') === '$') ? 'selected' : ''; ?>>$</option>
-                                            <option value="$$" <?php echo (($_POST['PriceRange'] ?? '') === '$$') ? 'selected' : ''; ?>>$$</option>
-                                            <option value="$$$" <?php echo (($_POST['PriceRange'] ?? '') === '$$$') ? 'selected' : ''; ?>>$$$</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4 d-flex align-items-end">
-                                        <div class="form-text mb-2">IdRestaurants is auto-generated by the database.</div>
-                                    </div>
-                                </div>
+                <form class="shadow-sm rounded bg-white p-4" method="post" action="add-restaurant.php">
 
-                                <div class="mt-4 d-flex gap-3 flex-wrap">
-                                    <button type="submit" class="btn btn-primary">Add Restaurant</button>
-                                    <a href="edit-profile.php" class="btn btn-outline-secondary">Edit Existing Restaurant</a>
-                                </div>
-                            </form>
+                    <!-- Step 1: Basic Info -->
+                    <h4 class="mb-3">Step 1: Basic Information</h4>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="RestaurantName" class="form-label">Restaurant Name</label>
+                            <input type="text" class="form-control" id="RestaurantName" name="RestaurantName"
+                                value="<?php echo htmlspecialchars($_POST['RestaurantName'] ?? ''); ?>" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Owner ID</label>
+                            <input type="text" class="form-control" value="<?php echo htmlspecialchars($sessionOwnerId); ?>" disabled>
+                            <div class="form-text">Automatically linked to your account.</div>
+                        </div>
+                        <div class="col-12">
+                            <label for="Address" class="form-label">Address</label>
+                            <textarea class="form-control" id="Address" name="Address" rows="2" required><?php echo htmlspecialchars($_POST['Address'] ?? ''); ?></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="PhoneNum" class="form-label">Phone Number</label>
+                            <input type="text" class="form-control" id="PhoneNum" name="PhoneNum"
+                                value="<?php echo htmlspecialchars($_POST['PhoneNum'] ?? ''); ?>" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="CusineType" class="form-label">Type of Cuisine</label>
+                            <input type="text" class="form-control" id="CusineType" name="CusineType"
+                                value="<?php echo htmlspecialchars($_POST['CusineType'] ?? ''); ?>" required>
                         </div>
                     </div>
-                </div>
+
+                    <hr>
+
+                    <!-- Step 2: Hours & Days -->
+                    <h4 class="mb-3">Step 2: Operating Hours &amp; Days</h4>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label for="OpeningHours" class="form-label">Opening Hours</label>
+                            <select class="form-select" id="OpeningHours" name="OpeningHours" required>
+                                <?php echo buildTimeOptions($postOpeningHours); ?>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="ClosingHours" class="form-label">Closing Hours</label>
+                            <select class="form-select" id="ClosingHours" name="ClosingHours" required>
+                                <?php echo buildTimeOptions($postClosingHours); ?>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="OpeningDays" class="form-label">Opening Days</label>
+                            <select class="form-select" id="OpeningDays" name="OpeningDays" required>
+                                <option value="">-- Select Days --</option>
+                                <?php foreach ($openingDaysOptions as $value => $label): ?>
+                                    <option value="<?php echo htmlspecialchars($value); ?>"
+                                        <?php echo ($postOpeningDays === $value) ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($label); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Step 3: Pricing -->
+                    <h4 class="mb-3">Step 3: Pricing</h4>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label for="PriceRange" class="form-label">Price Range</label>
+                            <select class="form-select" id="PriceRange" name="PriceRange" required>
+                                <option value="">Select a price range</option>
+                                <option value="$"   <?php echo (($_POST['PriceRange'] ?? '') === '$')   ? 'selected' : ''; ?>>$ &mdash; Budget</option>
+                                <option value="$$"  <?php echo (($_POST['PriceRange'] ?? '') === '$$')  ? 'selected' : ''; ?>>$$ &mdash; Moderate</option>
+                                <option value="$$$" <?php echo (($_POST['PriceRange'] ?? '') === '$$$') ? 'selected' : ''; ?>>$$$ &mdash; Fine Dining</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8 d-flex align-items-end">
+                            <div class="form-text">Restaurant ID is auto-generated by the database upon submission.</div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-3 flex-wrap mt-2">
+                        <button type="submit" class="btn btn-primary">Add Restaurant</button>
+                        <a href="edit-profile.php" class="btn btn-outline-secondary">Edit Existing Restaurant</a>
+                        <a href="dashboard.php" class="btn btn-outline-secondary">Back to Dashboard</a>
+                    </div>
+
+                </form>
             </div>
         </div>
-    </main>
+    </div>
 
     <?php include('includes/footer.php'); ?>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
