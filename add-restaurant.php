@@ -14,7 +14,7 @@ if (!$isAuthenticated || $currentRole !== 'restaurant') {
 }
 
 // Auto-fill OwnerId from session
-$sessionOwnerId = (int) ($_SESSION['idusers'] ?? 0);
+$sessionOwnerId = (int) ($_SESSION['user_id'] ?? 0);
 
 $successMessage = '';
 $errorMessage = '';
@@ -32,16 +32,6 @@ function buildTimeOptions($selectedValue = '') {
     }
     return $options;
 }
-
-// Opening days options
-$openingDaysOptions = [
-    'Mon-Fri'  => 'Mon-Fri (Weekdays)',
-    'Mon-Sat'  => 'Mon-Sat',
-    'Mon-Sun'  => 'Mon-Sun (Everyday)',
-    'Sat-Sun'  => 'Sat-Sun (Weekends)',
-    'Tue-Sun'  => 'Tue-Sun',
-    'Wed-Sun'  => 'Wed-Sun',
-];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
@@ -65,7 +55,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($errorMessage === '') {
             $restaurantPayload = [
-                'IdRestaurants' => null,
                 'RestaurantName' => trim($_POST['RestaurantName']),
                 'OwnerId'        => $sessionOwnerId,
                 'Address'        => trim($_POST['Address']),
@@ -80,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $connection = getDatabaseConnection($errorMessage);
 
             if ($connection) {
-                if (ownerIdExists($connection, $restaurantPayload['OwnerId'], $errorMessage)) {
+                if (ownerIdExists($connection, $sessionOwnerId, $errorMessage)) {
                     $insertedId = insertRestaurantRecord($connection, $restaurantPayload, $errorMessage);
 
                     if ($insertedId !== false) {
@@ -139,11 +128,7 @@ $postOpeningDays   = $_POST['OpeningDays'] ?? '';
                             <input type="text" class="form-control" id="RestaurantName" name="RestaurantName"
                                 value="<?php echo htmlspecialchars($_POST['RestaurantName'] ?? ''); ?>" required>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Owner ID</label>
-                            <input type="text" class="form-control" value="<?php echo htmlspecialchars($sessionOwnerId); ?>" disabled>
-                            <div class="form-text">Automatically linked to your account.</div>
-                        </div>
+
                         <div class="col-12">
                             <label for="Address" class="form-label">Address</label>
                             <textarea class="form-control" id="Address" name="Address" rows="2" required><?php echo htmlspecialchars($_POST['Address'] ?? ''); ?></textarea>
@@ -179,15 +164,9 @@ $postOpeningDays   = $_POST['OpeningDays'] ?? '';
                         </div>
                         <div class="col-md-4">
                             <label for="OpeningDays" class="form-label">Opening Days</label>
-                            <select class="form-select" id="OpeningDays" name="OpeningDays" required>
-                                <option value="">-- Select Days --</option>
-                                <?php foreach ($openingDaysOptions as $value => $label): ?>
-                                    <option value="<?php echo htmlspecialchars($value); ?>"
-                                        <?php echo ($postOpeningDays === $value) ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($label); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
+                            <input type="text" class="form-control" id="OpeningDays" name="OpeningDays"
+                                placeholder="Mon-Fri"
+                                value="<?php echo htmlspecialchars($postOpeningDays); ?>" required>
                         </div>
                     </div>
 
@@ -212,7 +191,6 @@ $postOpeningDays   = $_POST['OpeningDays'] ?? '';
 
                     <div class="d-flex gap-3 flex-wrap mt-2">
                         <button type="submit" class="btn btn-primary">Add Restaurant</button>
-                        <a href="edit-profile.php" class="btn btn-outline-secondary">Edit Existing Restaurant</a>
                         <a href="dashboard.php" class="btn btn-outline-secondary">Back to Dashboard</a>
                     </div>
 
@@ -222,6 +200,5 @@ $postOpeningDays   = $_POST['OpeningDays'] ?? '';
     </div>
 
     <?php include('includes/footer.php'); ?>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

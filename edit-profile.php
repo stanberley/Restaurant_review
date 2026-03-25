@@ -8,7 +8,7 @@ if (!isset($_SESSION['role'])) {
 }
 
 $currentRole = $_SESSION['role'];
-$sessionOwnerId = (int) ($_SESSION['idusers'] ?? 0);
+$sessionOwnerId = (int) ($_SESSION['user_id'] ?? 0);
 
 $successMessage = '';
 $errorMessage = '';
@@ -254,7 +254,7 @@ if ($currentRole === 'restaurant') {
                                                 <div class="form-text">Selecting a restaurant will pre-fill the form below via the page.</div>
                                             <?php endif; ?>
                                         </div>
-                                        <div class="col-md-4 d-flex align-items-end">
+                                        <div class="col-md-4 d-flex align-items-center">
                                             <a href="add-restaurant.php" class="btn btn-outline-primary w-100">+ Add New Restaurant</a>
                                         </div>
                                     </div>
@@ -300,15 +300,9 @@ if ($currentRole === 'restaurant') {
                                         </div>
                                         <div class="col-md-4">
                                             <label for="OpeningDays" class="form-label">Opening Days</label>
-                                            <select class="form-select" id="OpeningDays" name="OpeningDays" required>
-                                                <option value="">-- Select Days --</option>
-                                                <?php foreach ($openingDaysOptions as $val => $lbl): ?>
-                                                    <option value="<?php echo htmlspecialchars($val); ?>"
-                                                        <?php echo ($restaurantProfile['OpeningDays'] === $val) ? 'selected' : ''; ?>>
-                                                        <?php echo htmlspecialchars($lbl); ?>
-                                                    </option>
-                                                <?php endforeach; ?>
-                                            </select>
+                                            <input type="text" class="form-control" id="OpeningDays" name="OpeningDays"
+                                                placeholder="Mon-Fri"
+                                                value="<?php echo htmlspecialchars($restaurantProfile['OpeningDays']); ?>" required>
                                         </div>
                                         <div class="col-md-4">
                                             <label for="PriceRange" class="form-label">Price Range</label>

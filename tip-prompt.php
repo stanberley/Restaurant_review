@@ -212,7 +212,6 @@ $restaurantName = $restaurant['RestaurantName'] ?? 'this restaurant';
     </div>
 
     <?php include('includes/footer.php'); ?>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let currentMode  = 'fixed';
         let selectedPct  = 0;

@@ -89,10 +89,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $newUserId = saveUserToDB();
 
             if ($success) {
-                $_SESSION['idusers'] = $newUserId;
-                $_SESSION['name'] = $name;
+                $_SESSION['user_id'] = $newUserId;
                 $_SESSION['email'] = $email;
-                $_SESSION['role'] = $userType;
+                    $_SESSION['name']  = $name;
+                    $_SESSION['role']  = $userType;
 
                 header('Location: dashboard.php');
                 exit();
@@ -414,7 +414,6 @@ $openingDaysOptions = [
     </div>
 
     <?php include("includes/footer.php"); ?>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const signupForm = document.getElementById('signupForm');
         const stepOneSection = document.getElementById('stepOneSection');

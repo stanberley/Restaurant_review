@@ -6,7 +6,7 @@ if (!isset($_SESSION['role'])) {
     exit;
 }
 
-$name = $_SESSION['name'] ?? ' ';
+$name = $_SESSION['name'] ?? ($_SESSION['email'] ?? ' ');
 $email = $_SESSION['email'] ?? ' ';
 $role = $_SESSION['role'] ?? ' ';
 $pageTitle = 'View Profile';

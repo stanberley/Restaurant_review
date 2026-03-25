@@ -3,7 +3,7 @@ session_start();
 require_once __DIR__ . '/includes/restaurant-db.php';
 
 $isAuthenticated = isset($_SESSION['role']);
-$currentRole = $_SESSION['role'] ?? 'guest';
+$currentRole     = $_SESSION['role'] ?? 'guest';
 $errorMessage = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -31,10 +31,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (!$userFound || !password_verify($password, $passwordHash)) {
                     $errorMessage = 'Invalid email or password.';
                 } else {
-                    $_SESSION['idusers'] = (int) $userId;
-                    $_SESSION['name'] = $userName;
-                    $_SESSION['email'] = $userEmail;
-                    $_SESSION['role'] = $userRole;
+                    $_SESSION['user_id'] = (int) $userId;
+                    $_SESSION['name']    = $userName;
+                    $_SESSION['email']   = $userEmail;
+                    $_SESSION['role']    = $userRole;
 
                     if ($_SESSION['role'] === 'admin') {
                         header('Location: admin-dashboard.php');
@@ -88,7 +88,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <input type="password" id="loginPassword" name="password" class="form-control" required>
                     </div>
                     <button type="submit" class="btn btn-primary w-100 mb-3">Login</button>
-                    <p class="text-center text-muted small mb-0">Role is determined by your userType in the users table.</p>
                 </form>
             </div>
         </div>

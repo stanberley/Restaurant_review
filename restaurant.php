@@ -7,7 +7,7 @@ require_once __DIR__ . '/includes/restaurant-db.php';
 
 $isAuthenticated = isset($_SESSION['role']);
 $currentRole = $_SESSION['role'] ?? 'guest';
-$currentUserId = (int) ($_SESSION['idusers'] ?? 0);
+$currentUserId = (int) ($_SESSION['user_id'] ?? 0);
 
 $restaurantId = isset($_GET['id']) && ctype_digit($_GET['id']) && (int) $_GET['id'] > 0 ? (int) $_GET['id'] : null;
 $reviewError = '';
@@ -40,10 +40,10 @@ if ($connection) {
                 $reviewError = 'Please provide a valid rating (1 to 5) and a comment.';
             } else {
                 $reviewPayload = [
-                    'UserId' => $currentUserId,
+                    'UserId'       => $currentUserId,
                     'RestaurantID' => $restaurantId,
-                    'Rating' => (int) $reviewRating,
-                    'Comments' => $reviewComment
+                    'Rating'       => (int) $reviewRating,
+                    'Comments'     => $reviewComment
                 ];
 
                 if (insertReviewRecord($connection, $reviewPayload, $reviewError)) {
@@ -147,7 +147,7 @@ if ($heroImage === '') {
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label for="reviewer_name" class="form-label">Your Name</label>
-                                <input type="text" class="form-control" id="reviewer_name" value="<?php echo htmlspecialchars($_SESSION['name'] ?? ''); ?>" readonly>
+                                <input type="text" class="form-control" id="reviewer_name" value="<?php echo htmlspecialchars($_SESSION['email'] ?? ''); ?>" readonly>
                             </div>
                             <div class="col-md-6">
                                 <label for="review_rating" class="form-label">Rating</label>
@@ -187,7 +187,7 @@ if ($heroImage === '') {
                         <div class="col-12">
                             <div class="border rounded p-3 bg-white">
                                 <div class="d-flex justify-content-between flex-wrap gap-2 mb-2">
-                                    <strong>Review <?php echo $index + 1; ?> - <?php echo htmlspecialchars($review['ReviewerName']); ?></strong>
+                                    <strong>Review <?php echo $index + 1; ?> - <?php echo htmlspecialchars($review['reviewer_name'] ?? 'Anonymous'); ?></strong>
                                     <span><?php echo htmlspecialchars(date('Y-m-d H:i', strtotime($review['ReviewDate']))); ?></span>
                                 </div>
                                 <p class="mb-2"><strong>Rating:</strong> <?php echo htmlspecialchars($review['Rating']); ?> / 5</p>
@@ -207,6 +207,5 @@ if ($heroImage === '') {
     </main>
 
     <?php include("includes/footer.php"); ?>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
