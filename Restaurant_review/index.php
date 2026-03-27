@@ -3,8 +3,6 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
-require_once __DIR__ . '/includes/restaurant-db.php';
-
 $isAuthenticated = isset($_SESSION['role']);
 $currentRole = $_SESSION['role'] ?? 'guest';
 $roleLabel = 'Guest';
@@ -17,37 +15,26 @@ if ($currentRole === 'diner') {
     $roleLabel = 'Admin';
 }
 
-// ── Fetch featured reviews from DB ──────────────────────────────────────────
-$featuredReviews = [];
-$dbErr = '';
-$dbConn = getDatabaseConnection($dbErr);
-
-if ($dbConn) {
-    $stmt = $dbConn->prepare(
-        'SELECT rv.idReview,
-                rv.Rating,
-                rv.Comments,
-                rv.ReviewDate,
-                u.name  AS reviewer_name,
-                r.RestaurantName,
-                r.idRestaurants
-         FROM   Reviews rv
-         INNER  JOIN users       u ON u.idusers       = rv.UserId
-         INNER  JOIN Restaurants r ON r.idRestaurants = rv.RestaurantID
-         ORDER  BY rv.ReviewDate DESC
-         LIMIT  6'
-    );
-    if ($stmt) {
-        $stmt->execute();
-        $result = $stmt->get_result();
-        while ($row = $result->fetch_assoc()) {
-            $featuredReviews[] = $row;
-        }
-        $result->free();
-        $stmt->close();
-    }
-    $dbConn->close();
-}
+$featuredReviews = [
+    [
+        'restaurant' => 'Nasi & Co.',
+        'reviewer' => 'Sarah Lee',
+        'rating' => '5 / 5',
+        'comment' => 'Great ambience, fast service, and excellent nasi lemak.'
+    ],
+    [
+        'restaurant' => 'Pasta House',
+        'reviewer' => 'Jason Lim',
+        'rating' => '4 / 5',
+        'comment' => 'Very solid pasta dishes and a comfortable dinner setting.'
+    ],
+    [
+        'restaurant' => 'Tokyo Flame',
+        'reviewer' => 'Alicia Tan',
+        'rating' => '5 / 5',
+        'comment' => 'Fresh sushi, premium ingredients, and memorable service.'
+    ]
+];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -89,14 +76,22 @@ if ($dbConn) {
                             <div class="card-body p-4">
                                 <h2 class="h4 mb-3">Search Restaurants</h2>
                                 <p class="text-muted">This shared search area appears as part of the main experience for diners, restaurant owners, and admins after login.</p>
-                                <form action="search-results.php" method="GET">
+                                <form>
                                     <div class="row g-3">
                                         <div class="col-md-8">
                                             <label for="searchKeyword" class="form-label">Restaurant, cuisine, or location</label>
-                                            <input type="text" id="searchKeyword" name="keyword" class="form-control" placeholder="Search restaurants">
+                                            <input type="text" id="searchKeyword" class="form-control" placeholder="Search restaurants">
+                                            <script>
+                                            document.getElementById('searchBtn').addEventListener('click', function(e) {
+                                                e.preventDefault();
+                                                const q = document.getElementById('searchKeyword').value;
+                                                window.location.href = 'restaurant.php?search=' + encodeURIComponent(q);
+                                            });
+                                            </script>
                                         </div>
                                         <div class="col-md-4 d-flex align-items-end">
-                                            <button type="submit" class="btn btn-primary w-100" id="searchBtn">Search</button>
+                                            <a href="restaurant.php?search=<?php echo urlencode($_GET['q'] ?? ''); ?>" 
+                                                class="btn btn-primary w-100" id="searchBtn">Search</a>
                                         </div>
                                     </div>
                                 </form>
@@ -136,24 +131,16 @@ if ($dbConn) {
                                 <p class="text-muted mb-0">Everyone sees the same homepage review feed, while admins get moderation controls beside each review.</p>
                             </div>
                         </div>
-
-                        <?php if (empty($featuredReviews)): ?>
-                            <p class="text-muted">No reviews have been submitted yet. <a href="restaurant.php">Browse restaurants</a> to be the first!</p>
-                        <?php else: ?>
                         <div class="row g-3">
-                            <?php foreach ($featuredReviews as $review): ?>
+                            <?php foreach ($featuredReviews as $index => $review): ?>
                                 <div class="col-12">
                                     <div class="border rounded p-3 bg-white">
                                         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
                                             <div>
-                                                <h3 class="h6 mb-1">
-                                                    <a href="sample-review.php?id=<?php echo (int) $review['idRestaurants']; ?>" class="text-decoration-none">
-                                                        <?php echo htmlspecialchars($review['RestaurantName']); ?>
-                                                    </a>
-                                                </h3>
-                                                <p class="mb-1 text-muted">Reviewed by <?php echo htmlspecialchars($review['reviewer_name'] ?? 'Anonymous'); ?></p>
-                                                <p class="mb-1"><strong>Rating:</strong> <?php echo (int) $review['Rating']; ?> / 5</p>
-                                                <p class="mb-0"><?php echo htmlspecialchars($review['Comments']); ?></p>
+                                                <h3 class="h6 mb-1"><?php echo htmlspecialchars($review['restaurant']); ?></h3>
+                                                <p class="mb-1 text-muted">Reviewed by <?php echo htmlspecialchars($review['reviewer']); ?></p>
+                                                <p class="mb-1"><strong>Rating:</strong> <?php echo htmlspecialchars($review['rating']); ?></p>
+                                                <p class="mb-0"><?php echo htmlspecialchars($review['comment']); ?></p>
                                             </div>
                                             <?php if ($isAuthenticated && $currentRole === 'admin'): ?>
                                                 <button type="button" class="btn btn-outline-danger btn-sm">Delete Review</button>
@@ -163,7 +150,6 @@ if ($dbConn) {
                                 </div>
                             <?php endforeach; ?>
                         </div>
-                        <?php endif; ?>
                     </div>
                 </div>
             </section>
@@ -171,5 +157,6 @@ if ($dbConn) {
     </main>
 
     <?php include("includes/footer.php"); ?>
+    <script src="js/script.js"></script>
 </body>
 </html>

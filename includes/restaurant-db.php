@@ -314,6 +314,48 @@ function insertReviewRecord($connection, $reviewData, &$errorMessage)
     return $ok;
 }
 
+// ── Search restaurants by keyword ──────────────────────────────────────────────
+// Searches by restaurant name, cuisine type, and address (case-insensitive)
+function searchRestaurants($connection, $searchKeyword, &$errorMessage)
+{
+    $errorMessage = '';
+    if (trim($searchKeyword) === '') {
+        // Return all restaurants if search is empty
+        $result = $connection->query(
+            'SELECT idRestaurants, RestaurantName, Address, CusineType, PriceRange
+             FROM Restaurants
+             ORDER BY RestaurantName ASC'
+        );
+        if (!$result) {
+            $errorMessage = 'Failed to fetch restaurants: ' . $connection->error;
+            return [];
+        }
+        $rows = [];
+        while ($row = $result->fetch_assoc()) {
+            $rows[] = $row;
+        }
+        $result->free();
+        return $rows;
+    }
+    
+    $stmt = $connection->prepare(
+        'SELECT idRestaurants, RestaurantName, Address, CusineType, PriceRange
+         FROM Restaurants
+         WHERE LOWER(RestaurantName) LIKE LOWER(?) OR LOWER(CusineType) LIKE LOWER(?) OR LOWER(Address) LIKE LOWER(?)
+         ORDER BY RestaurantName ASC'
+    );
+    if (!$stmt) {
+        $errorMessage = 'Failed to prepare search query: ' . $connection->error;
+        return [];
+    }
+    $searchTerm = '%' . $searchKeyword . '%';
+    $stmt->bind_param('sss', $searchTerm, $searchTerm, $searchTerm);
+    $stmt->execute();
+    $rows = fetchAllAssocFromStatement($stmt);
+    $stmt->close();
+    return $rows;
+}
+
 // ── Insert a restaurant image ─────────────────────────────────────────────────
 // ERD: RestaurantImages(idRestaurantImages PK, idRestaurants FK, ImageUrl)
 function insertRestaurantImage($connection, $restaurantId, $imageUrl, &$errorMessage)
