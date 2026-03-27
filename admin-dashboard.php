@@ -10,7 +10,7 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
 
 require_once __DIR__ . '/includes/restaurant-db.php';
 
-$adminName = $_SESSION['name'] ?? 'Admin';
+$adminName = $_SESSION['email'] ?? 'Admin';
 
 // ── Database connection ──────────────────────────────────────────────────────
 $dbError = '';
@@ -39,7 +39,7 @@ if ($conn) {
     }
 
     // Flagged reviews = reviews with a rating of 2 stars or below
-    $result = $conn->query('SELECT COUNT(*) AS cnt FROM reviews WHERE Rating <= 2');
+    $result = $conn->query('SELECT COUNT(*) AS cnt FROM Reviews WHERE Rating <= 2');
     if ($result) {
         $flaggedReviews = (int) $result->fetch_assoc()['cnt'];
         $result->free();
@@ -116,9 +116,9 @@ $recentActivities = [];
 if ($conn) {
     $stmt = $conn->prepare(
         'SELECT rv.idReview, rv.Rating, rv.Comments, rv.ReviewDate,
-                u.name   AS ReviewerName,
+                u.name  AS ReviewerName,
                 r.RestaurantName
-         FROM   reviews rv
+         FROM   Reviews rv
          INNER  JOIN users       u ON u.idusers        = rv.UserId
          INNER  JOIN Restaurants r ON r.idRestaurants  = rv.RestaurantID
          ORDER  BY rv.ReviewDate DESC
@@ -449,6 +449,5 @@ if ($conn) {
 
 <?php include("includes/footer.php"); ?>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

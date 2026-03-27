@@ -26,10 +26,10 @@ if (isset($_GET['email'])) {
             $stmt->close();
 
             if ($userFound) {
-                $_SESSION['idusers'] = (int) $userId;
-                $_SESSION['email'] = $userEmail;
-                $_SESSION['name'] = $userName;
-                $_SESSION['role'] = $userRole;
+                $_SESSION['user_id'] = (int) $userId;
+                $_SESSION['name']    = $userName;
+                $_SESSION['email']   = $userEmail;
+                $_SESSION['role']    = $userRole;
 
                 $connection->close();
                 if ($_SESSION['role'] === 'admin') {

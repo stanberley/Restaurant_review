@@ -89,10 +89,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $newUserId = saveUserToDB();
 
             if ($success) {
-                $_SESSION['idusers'] = $newUserId;
-                $_SESSION['name'] = $name;
+                $_SESSION['user_id'] = $newUserId;
                 $_SESSION['email'] = $email;
-                $_SESSION['role'] = $userType;
+                    $_SESSION['name']  = $name;
+                    $_SESSION['role']  = $userType;
 
                 header('Location: dashboard.php');
                 exit();
@@ -224,6 +224,29 @@ function saveUserToDB()
         return 0;
     }
 }
+
+// Build time options helper
+function buildSignupTimeOptions($selectedValue = '') {
+    $options = '<option value="">-- Select Time --</option>';
+    for ($h = 0; $h < 24; $h++) {
+        foreach ([0, 30] as $m) {
+            $value = sprintf('%02d:%02d', $h, $m);
+            $label = date('g:i A', strtotime($value));
+            $selected = ($selectedValue === $value) ? ' selected' : '';
+            $options .= '<option value="' . $value . '"' . $selected . '>' . $label . '</option>';
+        }
+    }
+    return $options;
+}
+
+$openingDaysOptions = [
+    'Mon-Fri'  => 'Mon-Fri (Weekdays)',
+    'Mon-Sat'  => 'Mon-Sat',
+    'Mon-Sun'  => 'Mon-Sun (Everyday)',
+    'Sat-Sun'  => 'Sat-Sun (Weekends)',
+    'Tue-Sun'  => 'Tue-Sun',
+    'Wed-Sun'  => 'Wed-Sun',
+];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -309,6 +332,8 @@ function saveUserToDB()
                         </div>
 
                         <div id="restaurantFields" class="d-none">
+                            <hr class="my-3">
+                            <h5 class="mb-3">Restaurant Details</h5>
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label for="restIdPreview" class="form-label">Restaurant ID</label>
@@ -328,7 +353,7 @@ function saveUserToDB()
                                 </div>
                                 <div class="col-md-12">
                                     <label for="restaurantAddress" class="form-label">Address</label>
-                                    <textarea class="form-control" id="restaurantAddress" name="restaurantAddress" rows="3"><?php echo htmlspecialchars($restaurantAddress); ?></textarea>
+                                    <textarea class="form-control" id="restaurantAddress" name="restaurantAddress" rows="2"><?php echo htmlspecialchars($restaurantAddress); ?></textarea>
                                 </div>
                                 <div class="col-md-4">
                                     <label for="restaurantCuisine" class="form-label">Type of Cuisine</label>
@@ -336,23 +361,35 @@ function saveUserToDB()
                                 </div>
                                 <div class="col-md-4">
                                     <label for="restaurantHours" class="form-label">Opening Hours</label>
-                                    <input type="time" class="form-control" id="restaurantHours" name="restaurantHours" value="<?php echo htmlspecialchars($restaurantHours); ?>">
+                                    <select class="form-select" id="restaurantHours" name="restaurantHours">
+                                        <?php echo buildSignupTimeOptions($restaurantHours); ?>
+                                    </select>
                                 </div>
                                 <div class="col-md-4">
                                     <label for="restaurantClosingHours" class="form-label">Closing Hours</label>
-                                    <input type="time" class="form-control" id="restaurantClosingHours" name="restaurantClosingHours" value="<?php echo htmlspecialchars($restaurantClosingHours); ?>">
+                                    <select class="form-select" id="restaurantClosingHours" name="restaurantClosingHours">
+                                        <?php echo buildSignupTimeOptions($restaurantClosingHours); ?>
+                                    </select>
                                 </div>
                                 <div class="col-md-4">
                                     <label for="restaurantOpeningDays" class="form-label">Opening Days</label>
-                                    <input type="text" class="form-control" id="restaurantOpeningDays" name="restaurantOpeningDays" value="<?php echo htmlspecialchars($restaurantOpeningDays); ?>" placeholder="e.g. Mon-Sun">
+                                    <select class="form-select" id="restaurantOpeningDays" name="restaurantOpeningDays">
+                                        <option value="">-- Select Days --</option>
+                                        <?php foreach ($openingDaysOptions as $val => $lbl): ?>
+                                            <option value="<?php echo htmlspecialchars($val); ?>"
+                                                <?php echo ($restaurantOpeningDays === $val) ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($lbl); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
                                 </div>
                                 <div class="col-md-4">
                                     <label for="restaurantPriceRange" class="form-label">Price Range</label>
                                     <select class="form-select" id="restaurantPriceRange" name="restaurantPriceRange">
                                         <option value="">Select a price range</option>
-                                        <option value="$" <?php echo $restaurantPriceRange === '$' ? 'selected' : ''; ?>>$</option>
-                                        <option value="$$" <?php echo $restaurantPriceRange === '$$' ? 'selected' : ''; ?>>$$</option>
-                                        <option value="$$$" <?php echo $restaurantPriceRange === '$$$' ? 'selected' : ''; ?>>$$$</option>
+                                        <option value="$"   <?php echo $restaurantPriceRange === '$'   ? 'selected' : ''; ?>>$ &mdash; Budget</option>
+                                        <option value="$$"  <?php echo $restaurantPriceRange === '$$'  ? 'selected' : ''; ?>>$$ &mdash; Moderate</option>
+                                        <option value="$$$" <?php echo $restaurantPriceRange === '$$$' ? 'selected' : ''; ?>>$$$ &mdash; Fine Dining</option>
                                     </select>
                                 </div>
                                 <div class="col-md-6">
@@ -377,7 +414,6 @@ function saveUserToDB()
     </div>
 
     <?php include("includes/footer.php"); ?>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const signupForm = document.getElementById('signupForm');
         const stepOneSection = document.getElementById('stepOneSection');
@@ -443,7 +479,6 @@ function saveUserToDB()
             hideSignupMessages();
 
             const selectedType = getSelectedUserType();
-            const email = document.getElementById('signupEmail').value.trim();
             const password = document.getElementById('signupPassword').value;
             const confirmPassword = document.getElementById('signupConfirmPassword').value;
 
