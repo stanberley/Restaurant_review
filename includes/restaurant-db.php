@@ -60,6 +60,10 @@ function getDatabaseConnection(&$errorMessage)
             $errorMessage = 'DB connection failed: ' . $conn->connect_error;
             return null;
         }
+        if (!$conn->set_charset('utf8mb4')) {
+            // Fallback for older servers that do not support utf8mb4.
+            $conn->set_charset('utf8');
+        }
     } catch (Throwable $e) {
         $errorMessage = 'DB connection failed: ' . $e->getMessage();
         return null;
@@ -293,6 +297,20 @@ function getRestaurantReviews($connection, $restaurantId, &$errorMessage)
 function insertReviewRecord($connection, $reviewData, &$errorMessage)
 {
     $errorMessage = '';
+    $userId   = (int) ($reviewData['UserId']       ?? 0);
+    $restId   = (int) ($reviewData['RestaurantID'] ?? 0);
+    $rating   = (int) ($reviewData['Rating']       ?? 0);
+    $comments = trim((string) ($reviewData['Comments'] ?? ''));
+
+    if ($userId < 1 || $restId < 1) {
+        $errorMessage = 'Invalid review target or user.';
+        return false;
+    }
+    if ($rating < 1 || $rating > 5 || $comments === '') {
+        $errorMessage = 'Please provide a valid rating (1-5) and a comment.';
+        return false;
+    }
+
     $stmt = $connection->prepare(
         'INSERT INTO Reviews (UserId, RestaurantID, Rating, Comments, ReviewDate)
          VALUES (?, ?, ?, ?, NOW())'
@@ -301,17 +319,17 @@ function insertReviewRecord($connection, $reviewData, &$errorMessage)
         $errorMessage = 'Failed to prepare review insert: ' . $connection->error;
         return false;
     }
-    $userId    = (int) ($reviewData['UserId']       ?? 0);
-    $restId    = (int) ($reviewData['RestaurantID'] ?? 0);
-    $rating    = $reviewData['Rating']              ?? '';
-    $comments  = $reviewData['Comments']            ?? '';
-    $stmt->bind_param('iiss', $userId, $restId, $rating, $comments);
+    $stmt->bind_param('iiis', $userId, $restId, $rating, $comments);
     $ok = $stmt->execute();
-    if (!$ok) {
+    $affectedRows = $stmt->affected_rows;
+    if (!$ok || $affectedRows !== 1) {
         $errorMessage = 'Failed to submit review: ' . $stmt->error;
+        if ($errorMessage === 'Failed to submit review: ') {
+            $errorMessage = 'Failed to submit review: insert did not affect any row.';
+        }
     }
     $stmt->close();
-    return $ok;
+    return $ok && $affectedRows === 1;
 }
 
 // ── Search restaurants by keyword ──────────────────────────────────────────────
@@ -373,6 +391,36 @@ function insertRestaurantImage($connection, $restaurantId, $imageUrl, &$errorMes
     if (!$ok) {
         $errorMessage = 'Failed to insert image: ' . $stmt->error;
     }
+    $stmt->close();
+    return $ok;
+}
+// ── Update a review (only owner can edit) ─────────────────────────────────────
+function updateReviewRecord($connection, $reviewId, $userId, $rating, $comments, &$errorMessage)
+{
+    $errorMessage = '';
+    $stmt = $connection->prepare(
+        'UPDATE Reviews SET Rating = ?, Comments = ?, ReviewDate = ReviewDate
+         WHERE idReview = ? AND UserId = ?'
+    );
+    if (!$stmt) { $errorMessage = $connection->error; return false; }
+    $stmt->bind_param('ssii', $rating, $comments, $reviewId, $userId);
+    $ok = $stmt->execute();
+    if (!$ok) $errorMessage = $stmt->error;
+    $stmt->close();
+    return $ok;
+}
+
+// ── Delete a review (only owner can delete) ───────────────────────────────────
+function deleteReviewRecord($connection, $reviewId, $userId, &$errorMessage)
+{
+    $errorMessage = '';
+    $stmt = $connection->prepare(
+        'DELETE FROM Reviews WHERE idReview = ? AND UserId = ?'
+    );
+    if (!$stmt) { $errorMessage = $connection->error; return false; }
+    $stmt->bind_param('ii', $reviewId, $userId);
+    $ok = $stmt->execute();
+    if (!$ok) $errorMessage = $stmt->error;
     $stmt->close();
     return $ok;
 }
