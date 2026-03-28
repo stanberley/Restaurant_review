@@ -376,3 +376,33 @@ function insertRestaurantImage($connection, $restaurantId, $imageUrl, &$errorMes
     $stmt->close();
     return $ok;
 }
+// ── Update a review (only owner can edit) ─────────────────────────────────────
+function updateReviewRecord($connection, $reviewId, $userId, $rating, $comments, &$errorMessage)
+{
+    $errorMessage = '';
+    $stmt = $connection->prepare(
+        'UPDATE Reviews SET Rating = ?, Comments = ?, ReviewDate = ReviewDate
+         WHERE idReview = ? AND UserId = ?'
+    );
+    if (!$stmt) { $errorMessage = $connection->error; return false; }
+    $stmt->bind_param('ssii', $rating, $comments, $reviewId, $userId);
+    $ok = $stmt->execute();
+    if (!$ok) $errorMessage = $stmt->error;
+    $stmt->close();
+    return $ok;
+}
+
+// ── Delete a review (only owner can delete) ───────────────────────────────────
+function deleteReviewRecord($connection, $reviewId, $userId, &$errorMessage)
+{
+    $errorMessage = '';
+    $stmt = $connection->prepare(
+        'DELETE FROM Reviews WHERE idReview = ? AND UserId = ?'
+    );
+    if (!$stmt) { $errorMessage = $connection->error; return false; }
+    $stmt->bind_param('ii', $reviewId, $userId);
+    $ok = $stmt->execute();
+    if (!$ok) $errorMessage = $stmt->error;
+    $stmt->close();
+    return $ok;
+}
