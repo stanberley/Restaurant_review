@@ -5,16 +5,12 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
-// Only authenticated diners can tip
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'diner') {
     header('Location: login.php');
     exit;
 }
 
 require_once __DIR__ . '/includes/restaurant-db.php';
-// DO NOT load stripe-config.php here.
-// This page does not need Stripe yet.
-// Stripe should only be loaded in create-checkout-session.php.
 
 function e($value): string
 {
@@ -73,7 +69,6 @@ if (!$restaurantId) {
     }
 }
 
-// Show friendly messages returned from create-checkout-session.php
 if (isset($_GET['error']) && $_GET['error'] === 'min_amount') {
     $flashMessage = 'Minimum tip amount is $1.00.';
     $flashType = 'warning';
