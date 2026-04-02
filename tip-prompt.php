@@ -315,8 +315,15 @@ $backUrl = !empty($restaurantId) ? 'restaurant.php?id=' . (int) $restaurantId : 
                 btn.classList.remove('active');
             });
 
-            document.getElementById('customAmountInput')?.value = '';
-            document.getElementById('billAmountInput')?.value = '';
+            var customAmountInput = document.getElementById('customAmountInput');
+            if (customAmountInput) {
+                customAmountInput.value = '';
+            }
+
+            var billAmountInput = document.getElementById('billAmountInput');
+            if (billAmountInput) {
+                billAmountInput.value = '';
+            }
 
             updateSummary();
         }
