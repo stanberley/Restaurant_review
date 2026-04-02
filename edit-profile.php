@@ -1,5 +1,8 @@
 <?php
-include('includes/header.php');
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
 require_once __DIR__ . '/includes/restaurant-db.php';
 
 if (!isset($_SESSION['role'])) {
@@ -54,13 +57,13 @@ $restaurantProfile = [
 $dinerProfile = [
     'name'     => $_SESSION['name']     ?? '',
     'email'    => $_SESSION['email']    ?? '',
-    'password' => $_SESSION['password'] ?? ''
+    'password' => ''
 ];
 
 $adminProfile = [
     'name'     => $_SESSION['name']     ?? '',
     'email'    => $_SESSION['email']    ?? '',
-    'password' => $_SESSION['password'] ?? ''
+    'password' => ''
 ];
 
 // ── Fetch owner's restaurants for the dropdown ─────────────────────────────
@@ -168,13 +171,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($name === '' || $email === '' || $password === '') {
             $errorMessage = 'Please complete all profile fields before saving changes.';
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errorMessage = 'Please enter a valid email address.';
+        } elseif (strlen($password) < 6) {
+            $errorMessage = 'Password must be at least 6 characters long.';
         } else {
-            if ($currentRole === 'admin') {
-                $adminProfile = ['name' => $name, 'email' => $email, 'password' => $password];
-            } else {
-                $dinerProfile = ['name' => $name, 'email' => $email, 'password' => $password];
+            $connection = getDatabaseConnection($errorMessage);
+            if ($connection) {
+                $currentUserId = (int) ($_SESSION['user_id'] ?? 0);
+                if (updateUserProfileRecord($connection, $currentUserId, $name, $email, $password, $errorMessage)) {
+                    $_SESSION['name'] = $name;
+                    $_SESSION['email'] = $email;
+
+                    if ($currentRole === 'admin') {
+                        $adminProfile = ['name' => $name, 'email' => $email, 'password' => ''];
+                    } else {
+                        $dinerProfile = ['name' => $name, 'email' => $email, 'password' => ''];
+                    }
+                    $successMessage = 'Profile updated successfully.';
+                }
+                $connection->close();
             }
-            $successMessage = 'Profile updated successfully.';
         }
     }
 }
@@ -209,6 +226,8 @@ if ($currentRole === 'restaurant') {
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+    <?php include('includes/header.php'); ?>
+
     <main class="py-5">
         <div class="container">
             <div class="row justify-content-center">

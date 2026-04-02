@@ -102,11 +102,11 @@ $postOpeningDays   = $_POST['OpeningDays'] ?? '';
 <body>
     <?php include('includes/header.php'); ?>
 
-    <div class="container py-5">
+    <main class="container py-5">
         <div class="row justify-content-center">
             <div class="col-lg-8">
                 <div class="mb-4 text-center">
-                    <h2>Add a New Restaurant</h2>
+                    <h1>Add a New Restaurant</h1>
                     <p class="text-muted mb-0">Fill in your restaurant details below to create a new listing under your account.</p>
                 </div>
 
@@ -121,7 +121,7 @@ $postOpeningDays   = $_POST['OpeningDays'] ?? '';
                 <form class="shadow-sm rounded bg-white p-4" method="post" action="add-restaurant.php">
 
                     <!-- Step 1: Basic Info -->
-                    <h4 class="mb-3">Step 1: Basic Information</h4>
+                    <h2 class="mb-3">Step 1: Basic Information</h2>
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
                             <label for="RestaurantName" class="form-label">Restaurant Name</label>
@@ -148,7 +148,7 @@ $postOpeningDays   = $_POST['OpeningDays'] ?? '';
                     <hr>
 
                     <!-- Step 2: Hours & Days -->
-                    <h4 class="mb-3">Step 2: Operating Hours &amp; Days</h4>
+                    <h2 class="mb-3">Step 2: Operating Hours &amp; Days</h2>
                     <div class="row g-3 mb-4">
                         <div class="col-md-4">
                             <label for="OpeningHours" class="form-label">Opening Hours</label>
@@ -173,7 +173,7 @@ $postOpeningDays   = $_POST['OpeningDays'] ?? '';
                     <hr>
 
                     <!-- Step 3: Pricing -->
-                    <h4 class="mb-3">Step 3: Pricing</h4>
+                    <h2 class="mb-3">Step 3: Pricing</h2>
                     <div class="row g-3 mb-4">
                         <div class="col-md-4">
                             <label for="PriceRange" class="form-label">Price Range</label>
@@ -197,7 +197,7 @@ $postOpeningDays   = $_POST['OpeningDays'] ?? '';
                 </form>
             </div>
         </div>
-    </div>
+    </main>
 
     <?php include('includes/footer.php'); ?>
 </body>

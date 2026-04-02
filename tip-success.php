@@ -50,7 +50,7 @@ $restaurantId = isset($_GET['restaurant_id']) && ctype_digit($_GET['restaurant_i
 <body>
     <?php include('includes/header.php'); ?>
 
-    <div class="result-wrapper">
+    <main class="result-wrapper">
         <div class="result-card">
             <div class="result-icon">
                 <i class="bi bi-check-lg"></i>
@@ -72,7 +72,7 @@ $restaurantId = isset($_GET['restaurant_id']) && ctype_digit($_GET['restaurant_i
                 </a>
             </div>
         </div>
-    </div>
+    </main>
 
     <?php include('includes/footer.php'); ?>
 </body>

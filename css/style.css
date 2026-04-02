@@ -6,6 +6,23 @@ body, html {
     color: #2f2f2f;
 }
 
+/* Raise muted/secondary text contrast to meet WCAG 2 AA on light surfaces. */
+.text-muted {
+    color: #4b5563 !important;
+}
+
+.btn-outline-secondary {
+    color: #374151;
+    border-color: #4b5563;
+}
+
+.btn-outline-secondary:hover,
+.btn-outline-secondary:focus {
+    color: #111827;
+    background-color: #e5e7eb;
+    border-color: #374151;
+}
+
 .navbar {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
@@ -176,7 +193,7 @@ footer {
 }
 
 .admin-stat-label {
-    color: #6b7280;
+    color: #4b5563;
     font-size: 0.92rem;
     font-weight: 600;
 }
@@ -189,7 +206,7 @@ footer {
 }
 
 .admin-stat-desc {
-    color: #8a8f98;
+    color: #4b5563;
     font-size: 0.9rem;
 }
 
@@ -213,7 +230,7 @@ footer {
 }
 
 .admin-section-subtitle {
-    color: #7a8088;
+    color: #4b5563;
     font-size: 0.95rem;
 }
 
@@ -272,7 +289,7 @@ footer {
 }
 
 .admin-action-text {
-    color: #757b84;
+    color: #4b5563;
     margin-bottom: 1rem;
 }
 
@@ -357,13 +374,13 @@ footer {
 }
 
 .activity-meta {
-    color: #7a8088;
+    color: #4b5563;
     font-size: 0.92rem;
 }
 
 .activity-badge {
     background: #fff3e8;
-    color: #d95f22;
+    color: #8a3208;
     border-radius: 999px;
     padding: 0.45rem 0.8rem;
     font-size: 0.8rem;
@@ -421,7 +438,7 @@ footer {
 
 .status-pill.warn {
     background: #fff1e8;
-    color: #d95f22;
+    color: #8a3208;
 }
 
 .admin-note-box {
@@ -445,7 +462,7 @@ footer {
 
 .btn-danger-subtle-custom {
     background: #fff1f1;
-    color: #c43d4b;
+    color: #8f1d2c;
     border: 1px solid #ffd7dc;
     border-radius: 14px;
     padding: 0.85rem 1rem;
@@ -465,6 +482,11 @@ footer {
     .admin-hero-title {
         font-size: 1.9rem;
     }
+}
+
+/* Tip flow helper text override to avoid low-contrast gray in inline page styles. */
+.divider-text {
+    color: #4b5563 !important;
 }
 
 @media (max-width: 575.98px) {

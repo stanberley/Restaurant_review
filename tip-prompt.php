@@ -174,7 +174,7 @@ $backUrl = !empty($restaurantId) ? 'restaurant.php?id=' . (int) $restaurantId : 
 <body>
     <?php require_once __DIR__ . '/includes/header.php'; ?>
 
-    <div class="tip-page-wrapper">
+    <main class="tip-page-wrapper">
         <div class="tip-card">
             <?php if (!empty($flashMessage)): ?>
                 <div class="alert alert-<?php echo e($flashType); ?> mb-4">
@@ -223,7 +223,7 @@ $backUrl = !empty($restaurantId) ? 'restaurant.php?id=' . (int) $restaurantId : 
                 </div>
 
                 <div id="sectionCustom" style="display:none;">
-                    <p class="text-muted small mb-1 text-center">Enter any amount you'd like</p>
+                    <label for="customAmountInput" class="text-muted small mb-1 text-center d-block">Enter any amount you'd like</label>
                     <input
                         type="number"
                         id="customAmountInput"
@@ -235,7 +235,7 @@ $backUrl = !empty($restaurantId) ? 'restaurant.php?id=' . (int) $restaurantId : 
                 </div>
 
                 <div id="sectionPercent" style="display:none;">
-                    <p class="text-muted small mb-1 text-center">Enter your bill total to calculate tip</p>
+                    <label for="billAmountInput" class="text-muted small mb-1 text-center d-block">Enter your bill total to calculate tip</label>
                     <input
                         type="number"
                         id="billAmountInput"
@@ -286,7 +286,7 @@ $backUrl = !empty($restaurantId) ? 'restaurant.php?id=' . (int) $restaurantId : 
                 </a>
             <?php endif; ?>
         </div>
-    </div>
+    </main>
 
     <?php require_once __DIR__ . '/includes/footer.php'; ?>
 

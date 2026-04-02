@@ -40,7 +40,8 @@ if ($connection) {
                     <!-- Search Form -->
                     <form method="GET" action="search-results.php" class="mb-4">
                         <div class="input-group">
-                            <input type="text" name="keyword" class="form-control form-control-lg" 
+                            <label for="searchKeywordResults" class="input-group-text">Search</label>
+                            <input type="text" id="searchKeywordResults" name="keyword" class="form-control form-control-lg" 
                                    placeholder="Restaurant, cuisine, or location..." 
                                    value="<?php echo htmlspecialchars($searchKeyword); ?>">
                             <button class="btn btn-primary" type="submit">Search</button>

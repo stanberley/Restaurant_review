@@ -218,7 +218,7 @@ if ($conn) {
 
 <?php include("includes/header.php"); ?>
 
-<div class="container py-5">
+<main class="container py-5">
 
     <?php if ($dbError !== ''): ?>
         <div class="alert alert-warning d-flex align-items-center mb-4" role="alert">
@@ -255,6 +255,7 @@ if ($conn) {
     </section>
 
     <section class="mb-4">
+        <h2 class="visually-hidden">Dashboard Statistics</h2>
         <div class="row g-4">
             <?php foreach ($statCards as $card): ?>
                 <div class="col-sm-6 col-xl-3">
@@ -445,7 +446,7 @@ if ($conn) {
             </section>
         </div>
     </div>
-</div>
+</main>
 
 <?php include("includes/footer.php"); ?>
 

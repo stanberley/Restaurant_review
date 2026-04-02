@@ -1,5 +1,7 @@
 <?php
-    include('includes/header.php');
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
 
 if (!isset($_SESSION['role'])) {
     header('Location: login.php');
@@ -23,9 +25,11 @@ $pageTitle = 'View Profile';
 </head>
 
 <body>
-    <div class="container py-5">
+    <?php include('includes/header.php'); ?>
 
-        <h2 class="mb-4">Your Profile</h2>
+    <main class="container py-5">
+
+        <h1 class="mb-4">Your Profile</h1>
 
         <div class="card shadow-sm">
             <div class="card-body">
@@ -67,7 +71,7 @@ $pageTitle = 'View Profile';
             </div>
         </div>
 
-    </div>
+    </main>
 
     <?php include('includes/footer.php'); ?>
 

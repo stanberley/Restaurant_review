@@ -66,11 +66,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
     <?php include("includes/header.php"); ?>
 
-    <div class="container py-5">
+    <main class="container py-5">
         <div class="row justify-content-center">
             <div class="col-lg-5">
                 <div class="text-center mb-4">
-                    <h2>Login</h2>
+                    <h1>Login</h1>
                     <p class="text-muted mb-0">Sign in to access your dashboard, search tools, and role-based features.</p>
                 </div>
 
@@ -91,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </form>
             </div>
         </div>
-    </div>
+    </main>
     <?php include("includes/footer.php"); ?>
 
 </body>

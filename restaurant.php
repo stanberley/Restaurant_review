@@ -137,7 +137,7 @@ $editingReviewId = isset($_GET['edit']) && ctype_digit($_GET['edit']) ? (int)$_G
             --cream: #FAF8F4;
             --warm-dark: #1C1917;
             --warm-mid: #44403C;
-            --warm-muted: #78716C;
+            --warm-muted: #4b5563;
             --accent: #C2410C;
             --accent-light: #FFF7ED;
             --accent-border: #FDBA74;
@@ -186,7 +186,7 @@ $editingReviewId = isset($_GET['edit']) && ctype_digit($_GET['edit']) ? (int)$_G
         .fv-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .06em; color: var(--warm-muted); margin-bottom: 5px; display: block; }
         .fv-input { width: 100%; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 13px; font-size: 14px; font-family: 'DM Sans', sans-serif; color: var(--warm-dark); background: var(--cream); outline: none; transition: border-color .15s; }
         .fv-input:focus { border-color: var(--accent); background: #fff; }
-        .fv-input[readonly] { opacity: .6; cursor: default; }
+        .fv-input[readonly] { background-color: #f0f0f0; color: #6b7280; cursor: default; }
         textarea.fv-input { resize: vertical; min-height: 90px; line-height: 1.6; }
 
         .star-picker { display: flex; flex-direction: row-reverse; justify-content: flex-end; gap: 2px; }
@@ -237,6 +237,8 @@ $editingReviewId = isset($_GET['edit']) && ctype_digit($_GET['edit']) ? (int)$_G
 <body>
     <?php include("includes/header.php"); ?>
 
+    <main>
+
     <?php if ($dataError !== ''): ?>
         <div class="page-body">
             <div class="fv-alert danger"><i class="bi bi-exclamation-circle"></i><?php echo htmlspecialchars($dataError); ?></div>
@@ -253,7 +255,7 @@ $editingReviewId = isset($_GET['edit']) && ctype_digit($_GET['edit']) ? (int)$_G
             <h1 class="hero-title"><?php echo htmlspecialchars($restaurant['RestaurantName']); ?></h1>
             <div class="hero-meta">
                 <?php if ($averageRating !== null): ?>
-                <span><i class="bi bi-star-fill"></i><?php echo $averageRating; ?> / 5 &nbsp;<span style="opacity:.6">(<?php echo count($reviews); ?> review<?php echo count($reviews) !== 1 ? 's' : ''; ?>)</span></span>
+                <span><i class="bi bi-star-fill"></i><?php echo $averageRating; ?> / 5 &nbsp;<span style="color:#6b7280">(<?php echo count($reviews); ?> review<?php echo count($reviews) !== 1 ? 's' : ''; ?>)</span></span>
                 <?php endif; ?>
                 <span><i class="bi bi-geo-alt"></i><?php echo htmlspecialchars($restaurant['Address']); ?></span>
                 <span><i class="bi bi-telephone"></i><?php echo htmlspecialchars($restaurant['PhoneNum']); ?></span>
@@ -414,6 +416,8 @@ $editingReviewId = isset($_GET['edit']) && ctype_digit($_GET['edit']) ? (int)$_G
 
     </div>
     <?php endif; ?>
+
+    </main>
 
     <?php include("includes/footer.php"); ?>
     <script>

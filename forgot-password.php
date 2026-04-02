@@ -27,11 +27,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
     <?php include('includes/header.php'); ?>
 
-    <div class="container py-5">
+    <main class="container py-5">
         <div class="row justify-content-center">
             <div class="col-lg-5">
                 <div class="text-center mb-4">
-                    <h2>Forgot Password</h2>
+                    <h1>Forgot Password</h1>
                     <p class="text-muted mb-0">Enter your email and we will simulate sending password reset instructions.</p>
                 </div>
 
@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </form>
             </div>
         </div>
-    </div>
+    </main>
 
     <?php include('includes/footer.php'); ?>
 </body>

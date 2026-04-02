@@ -103,7 +103,7 @@ if ($dbConn) {
 <body>
     <?php include("includes/header.php"); ?>
 
-    <div class="container py-5">
+    <main class="container py-5">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
             <div>
                 <h1 class="mb-2"><?php echo htmlspecialchars($roleTitle); ?></h1>
@@ -117,19 +117,19 @@ if ($dbConn) {
             <div class="col-lg-8">
                 <div class="card shadow-sm border-0 h-100">
                     <div class="card-body p-4">
-                        <h3 class="h4 mb-3">Shared Base Dashboard</h3>
+                        <h2 class="h4 mb-3">Shared Base Dashboard</h2>
                         <p>This is the core dashboard used by diners, restaurant owners, and admins. Users can search restaurants, browse recent activity, and access the main platform sections from here.</p>
 
                         <!-- Go to Search -->
                         <div class="border rounded p-3 bg-light-subtle mt-3">
-                            <h4 class="h6 mb-1">Search Restaurants</h4>
+                            <h3 class="h6 mb-1">Search Restaurants</h3>
                             <p class="mb-3 text-muted small">Open restaurant listings and search the platform.</p>
                             <a href="index.php#search" class="btn btn-outline-primary btn-sm">Go to Search</a>
                         </div>
 
                         <!-- Browse by Restaurant ID dropdown -->
                         <div class="border rounded p-3 mt-3">
-                            <h4 class="h6 mb-1">Browse by Restaurant ID</h4>
+                            <h3 class="h6 mb-1">Browse by Restaurant ID</h3>
                             <p class="mb-3 text-muted small">Select a restaurant from the list to view its details and reviews.</p>
 
                             <?php if (empty($restaurantDropdownList)): ?>
@@ -206,7 +206,7 @@ if ($dbConn) {
             <div class="col-lg-4">
                 <div class="card shadow-sm border-0 h-100">
                     <div class="card-body p-4">
-                        <h3 class="h5 mb-3">Role-Based Options</h3>
+                        <h2 class="h5 mb-3">Role-Based Options</h2>
                         <?php if ($role === 'diner'): ?>
                             <p class="mb-2">As a diner, you can browse restaurants, read reviews, manage your profile, and discover highlighted places to try next.</p>
                             <ul class="mb-0">
@@ -273,7 +273,7 @@ if ($dbConn) {
                                          alt="<?php echo htmlspecialchars($restaurant['RestaurantName']); ?>"
                                          class="card-img-top" style="height: 200px; object-fit: cover;">
                                     <div class="card-body d-flex flex-column">
-                                        <h3 class="h5 mb-2"><?php echo htmlspecialchars($restaurant['RestaurantName']); ?></h3>
+                                        <h4 class="h5 mb-2"><?php echo htmlspecialchars($restaurant['RestaurantName']); ?></h4>
                                         <p class="mb-1"><strong>Cuisine:</strong> <?php echo htmlspecialchars($restaurant['CusineType']); ?></p>
                                         <p class="mb-1"><strong>Price:</strong> <?php echo htmlspecialchars($restaurant['PriceRange']); ?></p>
                                         <p class="mb-1"><strong>Address:</strong> <?php echo htmlspecialchars($restaurant['Address']); ?></p>
@@ -289,7 +289,7 @@ if ($dbConn) {
                 </div>
             </div>
         <?php endif; ?>
-    </div>
+    </main>
 
     <?php include("includes/footer.php"); ?>
 </body>

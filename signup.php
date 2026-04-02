@@ -260,11 +260,11 @@ $openingDaysOptions = [
 <body>
     <?php include("includes/header.php"); ?>
 
-    <div class="container py-5">
+    <main class="container py-5">
         <div class="row justify-content-center">
             <div class="col-lg-8">
                 <div class="mb-4 text-center">
-                    <h2>Create Your Account</h2>
+                    <h1>Create Your Account</h1>
                     <p class="text-muted mb-0">Start by choosing your account type, then continue to complete the rest of your registration details.</p>
                 </div>
 
@@ -273,7 +273,7 @@ $openingDaysOptions = [
 
                 <form id="signupForm" class="shadow-sm rounded bg-white p-4" method="post" action="signup.php">
                     <div id="stepOneSection">
-                        <h4 class="mb-3">Step 1: Basic Account Setup</h4>
+                        <h2 class="mb-3">Step 1: Basic Account Setup</h2>
                         <div class="row g-3">
                             <div class="col-md-12">
                                 <label class="form-label d-block mb-2">User Type</label>
@@ -303,7 +303,7 @@ $openingDaysOptions = [
 
                     <div id="stepTwoSection" class="d-none">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h4 class="mb-0">Step 2: Complete Your Account</h4>
+                            <h2 class="mb-0">Step 2: Complete Your Account</h2>
                             <button type="button" class="btn btn-outline-secondary btn-sm" id="backToStepOne">Back</button>
                         </div>
 
@@ -333,7 +333,7 @@ $openingDaysOptions = [
 
                         <div id="restaurantFields" class="d-none">
                             <hr class="my-3">
-                            <h5 class="mb-3">Restaurant Details</h5>
+                            <h3 class="mb-3">Restaurant Details</h3>
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label for="restIdPreview" class="form-label">Restaurant ID</label>
@@ -411,7 +411,7 @@ $openingDaysOptions = [
                 </form>
             </div>
         </div>
-    </div>
+    </main>
 
     <?php include("includes/footer.php"); ?>
     <script>

@@ -21,6 +21,34 @@ $users = [];
 $restaurants = [];
 
 if ($dbConn) {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $action = trim((string) ($_POST['moderation_action'] ?? ''));
+
+        if ($action === 'delete_user') {
+            $userId = (int) ($_POST['user_id'] ?? 0);
+            $currentAdminId = (int) ($_SESSION['user_id'] ?? 0);
+
+            if ($userId < 1) {
+                $dbErr = 'Invalid user selected for deletion.';
+            } elseif ($currentAdminId > 0 && $userId === $currentAdminId) {
+                $dbErr = 'You cannot delete the admin account currently in use.';
+            } else {
+                if (deleteUserRecordById($dbConn, $userId, $dbErr)) {
+                    $actionMessage = 'User #' . $userId . ' was deleted successfully.';
+                }
+            }
+        } elseif ($action === 'delete_restaurant') {
+            $restaurantId = (int) ($_POST['restaurant_id'] ?? 0);
+            if ($restaurantId < 1) {
+                $dbErr = 'Invalid restaurant selected for deletion.';
+            } else {
+                if (deleteRestaurantRecordById($dbConn, $restaurantId, $dbErr)) {
+                    $actionMessage = 'Restaurant #' . $restaurantId . ' was deleted successfully.';
+                }
+            }
+        }
+    }
+
     // Fetch all users
     $uResult = $dbConn->query(
         'SELECT idusers, name, email, userType FROM users ORDER BY idusers ASC'
@@ -48,11 +76,6 @@ if ($dbConn) {
     }
 
     $dbConn->close();
-}
-
-if (isset($_GET['deleted'])) {
-    $deletedType = $_GET['deleted'] === 'restaurant' ? 'restaurant' : 'user';
-    $actionMessage = 'The selected ' . $deletedType . ' has been removed from the moderation view.';
 }
 ?>
 <!DOCTYPE html>
@@ -113,7 +136,12 @@ if (isset($_GET['deleted'])) {
                                                 </td>
                                                 <td><?php echo htmlspecialchars($user['userType']); ?></td>
                                                 <td class="text-end">
-                                                    <a href="moderation.php?deleted=user" class="btn btn-outline-danger btn-sm">Delete</a>
+                                                    <form method="post" action="moderation.php" class="d-inline"
+                                                          onsubmit="return confirm('Delete this user and related records? This cannot be undone.');">
+                                                        <input type="hidden" name="moderation_action" value="delete_user">
+                                                        <input type="hidden" name="user_id" value="<?php echo (int) $user['idusers']; ?>">
+                                                        <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                                                    </form>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -152,7 +180,12 @@ if (isset($_GET['deleted'])) {
                                                 </td>
                                                 <td><?php echo htmlspecialchars($restaurant['CusineType']); ?> &middot; <?php echo htmlspecialchars($restaurant['PriceRange']); ?></td>
                                                 <td class="text-end">
-                                                    <a href="moderation.php?deleted=restaurant" class="btn btn-outline-danger btn-sm">Delete</a>
+                                                    <form method="post" action="moderation.php" class="d-inline"
+                                                          onsubmit="return confirm('Delete this restaurant and all related reviews/images? This cannot be undone.');">
+                                                        <input type="hidden" name="moderation_action" value="delete_restaurant">
+                                                        <input type="hidden" name="restaurant_id" value="<?php echo (int) $restaurant['idRestaurants']; ?>">
+                                                        <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                                                    </form>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>

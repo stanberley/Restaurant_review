@@ -424,3 +424,234 @@ function deleteReviewRecord($connection, $reviewId, $userId, &$errorMessage)
     $stmt->close();
     return $ok;
 }
+
+// ── Delete a review (admin moderation) ───────────────────────────────────────
+function deleteReviewRecordById($connection, $reviewId, &$errorMessage)
+{
+    $errorMessage = '';
+    $stmt = $connection->prepare('DELETE FROM Reviews WHERE idReview = ?');
+    if (!$stmt) {
+        $errorMessage = 'Failed to prepare review delete: ' . $connection->error;
+        return false;
+    }
+    $stmt->bind_param('i', $reviewId);
+    $ok = $stmt->execute();
+    if (!$ok) {
+        $errorMessage = 'Failed to delete review: ' . $stmt->error;
+    }
+    $stmt->close();
+    return $ok;
+}
+
+// ── Delete a restaurant and dependent records (admin moderation) ─────────────
+function deleteRestaurantRecordById($connection, $restaurantId, &$errorMessage)
+{
+    $errorMessage = '';
+
+    try {
+        $connection->begin_transaction();
+
+        $stmt = $connection->prepare('DELETE FROM Reviews WHERE RestaurantID = ?');
+        if (!$stmt) {
+            throw new RuntimeException('Failed to prepare dependent review delete: ' . $connection->error);
+        }
+        $stmt->bind_param('i', $restaurantId);
+        if (!$stmt->execute()) {
+            $msg = $stmt->error;
+            $stmt->close();
+            throw new RuntimeException('Failed to delete restaurant reviews: ' . $msg);
+        }
+        $stmt->close();
+
+        $stmt = $connection->prepare('DELETE FROM RestaurantImages WHERE idRestaurants = ?');
+        if (!$stmt) {
+            throw new RuntimeException('Failed to prepare dependent image delete: ' . $connection->error);
+        }
+        $stmt->bind_param('i', $restaurantId);
+        if (!$stmt->execute()) {
+            $msg = $stmt->error;
+            $stmt->close();
+            throw new RuntimeException('Failed to delete restaurant images: ' . $msg);
+        }
+        $stmt->close();
+
+        $stmt = $connection->prepare('DELETE FROM Restaurants WHERE idRestaurants = ?');
+        if (!$stmt) {
+            throw new RuntimeException('Failed to prepare restaurant delete: ' . $connection->error);
+        }
+        $stmt->bind_param('i', $restaurantId);
+        if (!$stmt->execute()) {
+            $msg = $stmt->error;
+            $stmt->close();
+            throw new RuntimeException('Failed to delete restaurant: ' . $msg);
+        }
+        $deleted = $stmt->affected_rows;
+        $stmt->close();
+
+        if ($deleted < 1) {
+            throw new RuntimeException('Restaurant not found.');
+        }
+
+        $connection->commit();
+        return true;
+    } catch (Throwable $e) {
+        try {
+            $connection->rollback();
+        } catch (Throwable $rollbackError) {
+            // No-op: keep original error.
+        }
+        $errorMessage = $e->getMessage();
+        return false;
+    }
+}
+
+// ── Delete a user and dependent records (admin moderation) ───────────────────
+function deleteUserRecordById($connection, $userId, &$errorMessage)
+{
+    $errorMessage = '';
+
+    try {
+        $connection->begin_transaction();
+
+        // Remove reviews authored by this user.
+        $stmt = $connection->prepare('DELETE FROM Reviews WHERE UserId = ?');
+        if (!$stmt) {
+            throw new RuntimeException('Failed to prepare user review delete: ' . $connection->error);
+        }
+        $stmt->bind_param('i', $userId);
+        if (!$stmt->execute()) {
+            $msg = $stmt->error;
+            $stmt->close();
+            throw new RuntimeException('Failed to delete user reviews: ' . $msg);
+        }
+        $stmt->close();
+
+        // Remove records linked to restaurants owned by this user.
+        $ownedRestaurantIds = [];
+        $stmt = $connection->prepare('SELECT idRestaurants FROM Restaurants WHERE OwnerId = ?');
+        if (!$stmt) {
+            throw new RuntimeException('Failed to prepare owned restaurant lookup: ' . $connection->error);
+        }
+        $stmt->bind_param('i', $userId);
+        if (!$stmt->execute()) {
+            $msg = $stmt->error;
+            $stmt->close();
+            throw new RuntimeException('Failed to fetch owned restaurants: ' . $msg);
+        }
+        $rows = fetchAllAssocFromStatement($stmt);
+        $stmt->close();
+
+        foreach ($rows as $row) {
+            $ownedRestaurantIds[] = (int) ($row['idRestaurants'] ?? 0);
+        }
+
+        if (count($ownedRestaurantIds) > 0) {
+            foreach ($ownedRestaurantIds as $restaurantId) {
+                if ($restaurantId < 1) {
+                    continue;
+                }
+
+                $stmt = $connection->prepare('DELETE FROM Reviews WHERE RestaurantID = ?');
+                if (!$stmt) {
+                    throw new RuntimeException('Failed to prepare owned restaurant review delete: ' . $connection->error);
+                }
+                $stmt->bind_param('i', $restaurantId);
+                if (!$stmt->execute()) {
+                    $msg = $stmt->error;
+                    $stmt->close();
+                    throw new RuntimeException('Failed to delete owned restaurant reviews: ' . $msg);
+                }
+                $stmt->close();
+
+                $stmt = $connection->prepare('DELETE FROM RestaurantImages WHERE idRestaurants = ?');
+                if (!$stmt) {
+                    throw new RuntimeException('Failed to prepare owned restaurant image delete: ' . $connection->error);
+                }
+                $stmt->bind_param('i', $restaurantId);
+                if (!$stmt->execute()) {
+                    $msg = $stmt->error;
+                    $stmt->close();
+                    throw new RuntimeException('Failed to delete owned restaurant images: ' . $msg);
+                }
+                $stmt->close();
+            }
+
+            $stmt = $connection->prepare('DELETE FROM Restaurants WHERE OwnerId = ?');
+            if (!$stmt) {
+                throw new RuntimeException('Failed to prepare owned restaurant delete: ' . $connection->error);
+            }
+            $stmt->bind_param('i', $userId);
+            if (!$stmt->execute()) {
+                $msg = $stmt->error;
+                $stmt->close();
+                throw new RuntimeException('Failed to delete owned restaurants: ' . $msg);
+            }
+            $stmt->close();
+        }
+
+        $stmt = $connection->prepare('DELETE FROM users WHERE idusers = ?');
+        if (!$stmt) {
+            throw new RuntimeException('Failed to prepare user delete: ' . $connection->error);
+        }
+        $stmt->bind_param('i', $userId);
+        if (!$stmt->execute()) {
+            $msg = $stmt->error;
+            $stmt->close();
+            throw new RuntimeException('Failed to delete user: ' . $msg);
+        }
+        $deleted = $stmt->affected_rows;
+        $stmt->close();
+
+        if ($deleted < 1) {
+            throw new RuntimeException('User not found.');
+        }
+
+        $connection->commit();
+        return true;
+    } catch (Throwable $e) {
+        try {
+            $connection->rollback();
+        } catch (Throwable $rollbackError) {
+            // No-op: keep original error.
+        }
+        $errorMessage = $e->getMessage();
+        return false;
+    }
+}
+
+// ── Update profile details for diner/admin accounts ──────────────────────────
+function updateUserProfileRecord($connection, $userId, $name, $email, $plainPassword, &$errorMessage)
+{
+    $errorMessage = '';
+
+    if ($userId < 1) {
+        $errorMessage = 'Invalid user account.';
+        return false;
+    }
+
+    $hashedPassword = password_hash($plainPassword, PASSWORD_DEFAULT);
+    if ($hashedPassword === false) {
+        $errorMessage = 'Failed to secure the new password.';
+        return false;
+    }
+
+    $stmt = $connection->prepare(
+        'UPDATE users
+         SET    name = ?,
+                email = ?,
+                password = ?
+         WHERE  idusers = ?'
+    );
+    if (!$stmt) {
+        $errorMessage = 'Failed to prepare profile update: ' . $connection->error;
+        return false;
+    }
+
+    $stmt->bind_param('sssi', $name, $email, $hashedPassword, $userId);
+    $ok = $stmt->execute();
+    if (!$ok) {
+        $errorMessage = 'Failed to update profile: ' . $stmt->error;
+    }
+    $stmt->close();
+    return $ok;
+}

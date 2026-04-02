@@ -8,6 +8,8 @@ require_once __DIR__ . '/includes/restaurant-db.php';
 $isAuthenticated = isset($_SESSION['role']);
 $currentRole = $_SESSION['role'] ?? 'guest';
 $roleLabel = 'Guest';
+$reviewActionMessage = '';
+$reviewActionError = '';
 
 if ($currentRole === 'diner') {
     $roleLabel = 'Diner';
@@ -15,6 +17,35 @@ if ($currentRole === 'diner') {
     $roleLabel = 'Restaurant Owner';
 } elseif ($currentRole === 'admin') {
     $roleLabel = 'Admin';
+}
+
+if ($isAuthenticated && $currentRole === 'admin' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = trim((string) ($_POST['admin_action'] ?? ''));
+    if ($action === 'delete_review') {
+        $deleteReviewId = (int) ($_POST['review_id'] ?? 0);
+        if ($deleteReviewId < 1) {
+            $reviewActionError = 'Invalid review selected for deletion.';
+        } else {
+            $deleteErr = '';
+            $deleteConn = getDatabaseConnection($deleteErr);
+
+            if (!$deleteConn) {
+                $reviewActionError = $deleteErr !== '' ? $deleteErr : 'Unable to connect to the database.';
+            } else {
+                if (deleteReviewRecordById($deleteConn, $deleteReviewId, $deleteErr)) {
+                    $deleteConn->close();
+                    header('Location: index.php?review_action=deleted');
+                    exit;
+                }
+                $reviewActionError = $deleteErr !== '' ? $deleteErr : 'Failed to delete review.';
+                $deleteConn->close();
+            }
+        }
+    }
+}
+
+if (isset($_GET['review_action']) && $_GET['review_action'] === 'deleted') {
+    $reviewActionMessage = 'Review deleted successfully.';
 }
 
 // ── Fetch featured reviews from DB ──────────────────────────────────────────
@@ -130,6 +161,14 @@ if ($dbConn) {
             <section>
                 <div class="card shadow-sm border-0">
                     <div class="card-body p-4">
+                        <?php if ($reviewActionMessage !== ''): ?>
+                            <div class="alert alert-success mb-4"><?php echo htmlspecialchars($reviewActionMessage); ?></div>
+                        <?php endif; ?>
+
+                        <?php if ($reviewActionError !== ''): ?>
+                            <div class="alert alert-danger mb-4"><?php echo htmlspecialchars($reviewActionError); ?></div>
+                        <?php endif; ?>
+
                         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
                             <div>
                                 <h2 class="h4 mb-1">Featured Reviews</h2>
@@ -156,7 +195,12 @@ if ($dbConn) {
                                                 <p class="mb-0"><?php echo htmlspecialchars($review['Comments']); ?></p>
                                             </div>
                                             <?php if ($isAuthenticated && $currentRole === 'admin'): ?>
-                                                <button type="button" class="btn btn-outline-danger btn-sm">Delete Review</button>
+                                                <form method="post" action="index.php" class="d-inline"
+                                                      onsubmit="return confirm('Delete this review from the homepage feed?');">
+                                                    <input type="hidden" name="admin_action" value="delete_review">
+                                                    <input type="hidden" name="review_id" value="<?php echo (int) $review['idReview']; ?>">
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm">Delete Review</button>
+                                                </form>
                                             <?php endif; ?>
                                         </div>
                                     </div>
